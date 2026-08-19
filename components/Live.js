@@ -1,29 +1,59 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Gauge, RotateCcw, X } from "lucide-react";
+import { RotateCcw, X } from "lucide-react";
 import Card from "./Card";
-import {
-  LIVE_STORAGE_KEY,
-  POSITIONS,
-  RANK_ORDER,
-  SUIT_LIST,
-  compactCards,
-  emptySnapshot,
-  indicators
-} from "@/lib/indicators";
+import { RANK_ORDER, SUIT_LIST, compactCards, holeLabel } from "@/lib/indicators";
+import { ARCHETYPES, POS_6, STAT_FIELDS, classify, emptyTable, hasRead } from "@/lib/villains";
+import { legalActions, recommend } from "@/lib/preflop";
 
-function loadSpot() {
-  const base = emptySnapshot();
+const SEATS_KEY = "hl-live-seats";
+const HAND_KEY = "hl-live-hand";
+
+const ACTION_LABEL = {
+  fold: "Fold",
+  limp: "Limp",
+  open: "Open",
+  call: "Call",
+  "3bet": "3-bet",
+  "4bet": "4-bet",
+  check: "Check"
+};
+
+function emptyHand(heroPos = "BTN") {
+  return {
+    heroPos,
+    hole: [null, null],
+    actions: Object.fromEntries(POS_6.map((pos) => [pos, ""]))
+  };
+}
+
+function loadSeats() {
+  const base = emptyTable();
   try {
-    const raw = sessionStorage.getItem(LIVE_STORAGE_KEY);
-    if (!raw) return base;
-    const parsed = JSON.parse(raw);
-    const hole = [parsed.hole?.[0] || null, parsed.hole?.[1] || null];
-    const board = [0, 1, 2, 3, 4].map((i) => parsed.board?.[i] || null);
-    return { ...base, ...parsed, hole, board };
+    const parsed = JSON.parse(localStorage.getItem(SEATS_KEY) || "null");
+    if (!parsed) return base;
+    for (const pos of POS_6) {
+      base[pos] = {
+        ...base[pos],
+        ...parsed[pos],
+        pos,
+        stats: { ...base[pos].stats, ...parsed[pos]?.stats }
+      };
+    }
+    return base;
   } catch {
     return base;
+  }
+}
+
+function loadHand() {
+  try {
+    const parsed = JSON.parse(sessionStorage.getItem(HAND_KEY) || "null");
+    if (!parsed) return emptyHand();
+    return { ...emptyHand(parsed.heroPos || "BTN"), ...parsed, hole: [parsed.hole?.[0] || null, parsed.hole?.[1] || null] };
+  } catch {
+    return emptyHand();
   }
 }
 
@@ -43,239 +73,240 @@ function Slot({ card, label, onClick, onClear }) {
   );
 }
 
-function Metric({ label, value, hint, tone }) {
-  return (
-    <article className={"live-metric" + (tone ? ` ${tone}` : "")}>
-      <small>{label}</small>
-      <b>{value}</b>
-      {hint ? <span>{hint}</span> : null}
-    </article>
-  );
-}
-
 export default function Live() {
-  const [spot, setSpot] = useState(emptySnapshot);
+  const [seats, setSeats] = useState(emptyTable);
+  const [hand, setHand] = useState(emptyHand);
   const [picker, setPicker] = useState(null);
+  const [editPos, setEditPos] = useState(null);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    setSpot(loadSpot());
+    setSeats(loadSeats());
+    setHand(loadHand());
     setHydrated(true);
   }, []);
 
   useEffect(() => {
     if (!hydrated) return;
     try {
-      sessionStorage.setItem(LIVE_STORAGE_KEY, JSON.stringify(spot));
+      localStorage.setItem(SEATS_KEY, JSON.stringify(seats));
     } catch {}
-  }, [spot, hydrated]);
+  }, [seats, hydrated]);
 
-  const used = useMemo(() => new Set([...compactCards(spot.hole), ...compactCards(spot.board)]), [spot.hole, spot.board]);
-  const hud = useMemo(() => indicators(spot), [spot]);
+  useEffect(() => {
+    if (!hydrated) return;
+    try {
+      sessionStorage.setItem(HAND_KEY, JSON.stringify(hand));
+    } catch {}
+  }, [hand, hydrated]);
 
-  const setField = (key, value) => setSpot((s) => ({ ...s, [key]: value }));
-  const setCard = (zone, index, code) => {
-    setSpot((s) => {
-      const next = [...s[zone]];
-      next[index] = code;
-      return { ...s, [zone]: next };
-    });
-    setPicker(null);
-  };
-  const openPicker = (zone, index) => setPicker({ zone, index });
+  const used = useMemo(() => new Set(compactCards(hand.hole)), [hand.hole]);
+  const rec = useMemo(
+    () => recommend({ hole: hand.hole, heroPos: hand.heroPos, actions: hand.actions, seats }),
+    [hand, seats]
+  );
+  const heroIdx = POS_6.indexOf(hand.heroPos);
+  const visualOrder = POS_6.map((_, i) => POS_6[(heroIdx + i) % POS_6.length]);
+  const ahead = POS_6.slice(0, heroIdx);
+  const editSeat = editPos ? seats[editPos] : null;
+  const pickCode = picker != null ? hand.hole[picker] : null;
 
-  const nextHand = () => {
-    setPicker(null);
-    setSpot((s) => ({
-      ...emptySnapshot(),
-      heroPos: s.heroPos,
-      stacksBB: s.stacksBB,
-      villains: s.villains
+  const setHero = (pos) => {
+    setHand((h) => ({
+      ...emptyHand(pos),
+      hole: h.hole
     }));
   };
 
-  const pot = Number(spot.pot) || 0;
-  const pickCode = picker ? spot[picker.zone][picker.index] : null;
+  const setCard = (index, code) => {
+    setHand((h) => {
+      const hole = [...h.hole];
+      hole[index] = code;
+      return { ...h, hole };
+    });
+    setPicker(null);
+  };
+
+  const setAction = (pos, action) => {
+    setHand((h) => {
+      const actions = { ...h.actions, [pos]: h.actions[pos] === action ? "" : action };
+      const idx = POS_6.indexOf(pos);
+      for (const later of POS_6.slice(idx + 1)) {
+        if (!actions[later]) continue;
+        if (!legalActions(actions, later).includes(actions[later])) actions[later] = "";
+      }
+      return { ...h, actions };
+    });
+  };
+
+  const patchSeat = (pos, patch) => {
+    setSeats((s) => ({ ...s, [pos]: { ...s[pos], ...patch, stats: { ...s[pos].stats, ...(patch.stats || {}) } } }));
+  };
+
+  const nextHand = () => {
+    setPicker(null);
+    setHand((h) => emptyHand(h.heroPos));
+  };
 
   return (
     <div className="page live-page">
       <div className="live-top">
         <div>
-          <span className="tag">LIVE COMPANION · MATH HUD</span>
-          <h1>Glanceable odds. No solver claims.</h1>
-          <p>Tap hole cards, board and pot. Numbers update for this street only.</p>
+          <span className="tag">LIVE · 6-MAX</span>
+          <h1>Tag the table. Get a line.</h1>
+          <p>Save a read on each seat. When a hand starts, enter your cards and the action in front of you.</p>
         </div>
         <button className="ghost" type="button" onClick={nextHand}>
           <RotateCcw /> Next hand
         </button>
       </div>
 
+      <section className="live-felt-card">
+        <small>YOU ARE</small>
+        <div className="live-chips">
+          {POS_6.map((pos) => (
+            <button key={pos} type="button" className={hand.heroPos === pos ? "on" : ""} onClick={() => setHero(pos)}>
+              {pos}
+            </button>
+          ))}
+        </div>
+        <div className="live-felt">
+          {visualOrder.map((pos, visual) => {
+            const read = classify(seats[pos]);
+            const isHero = pos === hand.heroPos;
+            const acted = hand.actions[pos];
+            return (
+              <button
+                key={pos}
+                type="button"
+                className={`live-seat live-seat-${visual}${isHero ? " hero" : ""}${hasRead(seats[pos]) ? " tagged" : ""}`}
+                onClick={() => {
+                  if (!isHero) setEditPos(pos);
+                }}
+              >
+                <b>
+                  {pos}
+                  {isHero ? " · YOU" : ""}
+                </b>
+                <span>{isHero ? holeLabel(hand.hole) || "Your cards" : read.label}</span>
+                {acted ? <em>{ACTION_LABEL[acted]}</em> : null}
+              </button>
+            );
+          })}
+          <div className="live-felt-core">6-max</div>
+        </div>
+        <p className="live-felt-hint">Tap an opponent to enter VPIP / PFR / 3-bet, or just stamp a type.</p>
+      </section>
+
       <section className="live-cards">
         <div>
-          <small>HOLE</small>
+          <small>YOUR HAND</small>
           <div className="live-slots">
-            {spot.hole.map((c, i) => (
+            {hand.hole.map((c, i) => (
               <Slot
                 key={`h${i}`}
                 card={c}
                 label={i === 0 ? "Card 1" : "Card 2"}
-                onClick={() => openPicker("hole", i)}
-                onClear={() => setCard("hole", i, null)}
-              />
-            ))}
-          </div>
-        </div>
-        <div>
-          <small>BOARD</small>
-          <div className="live-slots">
-            {spot.board.map((c, i) => (
-              <Slot
-                key={`b${i}`}
-                card={c}
-                label={i < 3 ? "Flop" : i === 3 ? "Turn" : "River"}
-                onClick={() => openPicker("board", i)}
-                onClear={() => setCard("board", i, null)}
+                onClick={() => setPicker(i)}
+                onClear={() => setCard(i, null)}
               />
             ))}
           </div>
         </div>
       </section>
 
-      <section className="live-context">
-        <div className="live-field">
-          <small>POSITION</small>
-          <div className="live-chips">
-            {POSITIONS.map((p) => (
-              <button key={p} type="button" className={spot.heroPos === p ? "on" : ""} onClick={() => setField("heroPos", p)}>
-                {p}
+      <section className="live-actions">
+        <small>ACTION IN FRONT</small>
+        {ahead.length === 0 ? (
+          <p>You are UTG. No action in front — this is an open-or-fold.</p>
+        ) : (
+          ahead.map((pos) => {
+            const options = legalActions(hand.actions, pos);
+            return (
+              <div className="live-action-row" key={pos}>
+                <b>{pos}</b>
+                <div className="live-chips compact">
+                  {options.map((act) => (
+                    <button
+                      key={act}
+                      type="button"
+                      className={hand.actions[pos] === act ? "on" : ""}
+                      onClick={() => setAction(pos, act)}
+                    >
+                      {ACTION_LABEL[act]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })
+        )}
+      </section>
+
+      <section className={"live-rec" + (rec.action === "Fold" ? " fold" : rec.action === "—" ? "" : " go")}>
+        <small>RECOMMENDATION</small>
+        <h2>{rec.action}</h2>
+        <b>{rec.detail}</b>
+        <p>{rec.reason}</p>
+      </section>
+
+      {editPos && editSeat && (
+        <div className="live-picker-scrim" onClick={() => setEditPos(null)}>
+          <div className="live-editor" onClick={(e) => e.stopPropagation()}>
+            <div className="live-picker-head">
+              <b>{editPos} read</b>
+              <button
+                type="button"
+                className="ghost"
+                onClick={() => {
+                  patchSeat(editPos, { tag: null, stats: { vpip: "", pfr: "", threeBet: "", foldTo3bet: "", wtsd: "" } });
+                }}
+              >
+                Clear
               </button>
-            ))}
+            </div>
+            <p className="live-editor-lead">Stamp a type, or type frequencies if you have them. Both feed the same line.</p>
+            <div className="live-chips">
+              {ARCHETYPES.map((a) => (
+                <button
+                  key={a.id}
+                  type="button"
+                  className={editSeat.tag === a.id ? "on" : ""}
+                  onClick={() => patchSeat(editPos, { tag: editSeat.tag === a.id ? null : a.id })}
+                >
+                  {a.label}
+                </button>
+              ))}
+            </div>
+            <div className="live-stat-grid">
+              {STAT_FIELDS.map((f) => (
+                <label key={f.key}>
+                  <small>{f.label}</small>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    inputMode="decimal"
+                    placeholder="%"
+                    value={editSeat.stats[f.key]}
+                    onChange={(e) => patchSeat(editPos, { tag: null, stats: { [f.key]: e.target.value } })}
+                  />
+                </label>
+              ))}
+            </div>
+            <button className="cta" type="button" onClick={() => setEditPos(null)}>
+              Done
+            </button>
           </div>
         </div>
-        <div className="live-nums">
-          <label>
-            <small>STACK</small>
-            <div className="live-num">
-              <input
-                type="number"
-                min="0"
-                inputMode="decimal"
-                value={spot.stacksBB}
-                onChange={(e) => setField("stacksBB", e.target.value === "" ? "" : Number(e.target.value))}
-              />
-              <b>BB</b>
-            </div>
-            <div className="live-chips compact">
-              {[20, 50, 100].map((n) => (
-                <button key={n} type="button" className={Number(spot.stacksBB) === n ? "on" : ""} onClick={() => setField("stacksBB", n)}>
-                  {n}
-                </button>
-              ))}
-            </div>
-          </label>
-          <label>
-            <small>POT</small>
-            <div className="live-num">
-              <input
-                type="number"
-                min="0"
-                step="0.5"
-                inputMode="decimal"
-                value={spot.pot}
-                onChange={(e) => setField("pot", e.target.value === "" ? "" : Number(e.target.value))}
-              />
-              <b>BB</b>
-            </div>
-            <div className="live-chips compact">
-              {[3.5, 6, 12, 20].map((n) => (
-                <button key={n} type="button" className={Number(spot.pot) === n ? "on" : ""} onClick={() => setField("pot", n)}>
-                  {n}
-                </button>
-              ))}
-            </div>
-          </label>
-          <label>
-            <small>TO CALL</small>
-            <div className="live-num">
-              <input
-                type="number"
-                min="0"
-                step="0.5"
-                inputMode="decimal"
-                value={spot.toCall}
-                onChange={(e) => setField("toCall", e.target.value === "" ? "" : Number(e.target.value))}
-              />
-              <b>BB</b>
-            </div>
-            <div className="live-chips compact">
-              <button type="button" className={Number(spot.toCall) === 0 ? "on" : ""} onClick={() => setField("toCall", 0)}>
-                Check
-              </button>
-              <button type="button" disabled={!pot} onClick={() => setField("toCall", Math.round(pot * 5) / 10)}>
-                ½ pot
-              </button>
-              <button type="button" disabled={!pot} onClick={() => setField("toCall", Math.round((pot * 2) / 3 * 10) / 10)}>
-                ⅔ pot
-              </button>
-              <button type="button" disabled={!pot} onClick={() => setField("toCall", pot)}>
-                Pot
-              </button>
-            </div>
-          </label>
-          <label>
-            <small>VILLAINS</small>
-            <div className="live-chips compact">
-              {[1, 2, 3, 4].map((n) => (
-                <button key={n} type="button" className={Number(spot.villains) === n ? "on" : ""} onClick={() => setField("villains", n)}>
-                  {n}
-                </button>
-              ))}
-            </div>
-          </label>
-        </div>
-      </section>
+      )}
 
-      <section className="live-hud">
-        <div className="live-cue">
-          <Gauge />
-          <p>{hud.cue}</p>
-        </div>
-        <div className="live-metrics">
-          <Metric label="HAND" value={hud.hand ? hud.hand.name : "—"} hint={hud.texture?.label || (hud.hand ? spot.heroPos : null)} />
-          <Metric
-            label="POT ODDS"
-            value={!hud.ready ? "—" : hud.freePlay ? "Free" : hud.potOdds ? `${hud.potOdds.percent}%` : "—"}
-            hint={!hud.ready ? "Needs pot" : hud.freePlay ? "No bet to call" : hud.potOdds ? `${hud.potOdds.ratio} : 1` : null}
-          />
-          <Metric
-            label="NEED"
-            value={!hud.ready || hud.need == null ? "—" : `${hud.need}%`}
-            hint={hud.gettingPrice ? "Getting the price" : hud.need == null ? (hud.freePlay ? "Free play" : "Set a call amount") : "Short of the price"}
-            tone={hud.gettingPrice ? "good" : hud.ready && hud.need != null && hud.gettingPrice === false ? "warn" : ""}
-          />
-          <Metric label="SPR" value={!hud.ready || hud.spr == null ? "—" : String(hud.spr)} hint={hud.ready ? "Effective stack / pot" : "Needs pot"} />
-          <Metric
-            label={hud.outs ? "OUTS / EQ" : "EQUITY"}
-            value={
-              !hud.ready
-                ? "—"
-                : hud.outs
-                  ? `${hud.outs.count} · ${hud.equity ?? hud.outs.approx}%`
-                  : hud.equity != null
-                    ? `${hud.equity}%`
-                    : "—"
-            }
-            hint={hud.ready ? `vs ${spot.villains} random` : "Needs hole + pot"}
-          />
-        </div>
-      </section>
-
-      {picker && (
+      {picker != null && (
         <div className="live-picker-scrim" onClick={() => setPicker(null)}>
           <div className="live-picker" onClick={(e) => e.stopPropagation()}>
             <div className="live-picker-head">
               <b>Pick a card</b>
-              <button type="button" className="ghost" onClick={() => setCard(picker.zone, picker.index, null)}>
+              <button type="button" className="ghost" onClick={() => setCard(picker, null)}>
                 Clear
               </button>
             </div>
@@ -293,7 +324,7 @@ export default function Live() {
                         type="button"
                         disabled={taken}
                         className={"live-grid-card" + (red ? " red" : "") + (selected ? " on" : "")}
-                        onClick={() => setCard(picker.zone, picker.index, code)}
+                        onClick={() => setCard(picker, code)}
                       >
                         <b>{rank}</b>
                         <span>{suit.icon}</span>
