@@ -36,11 +36,21 @@
 .live-actions p{color:var(--muted);margin:10px 0 0;font-size:13px}
 .live-action-row{border-top:1px solid var(--line);align-items:center;gap:10px;margin-top:10px;padding-top:10px;display:grid;grid-template-columns:52px 1fr}
 .live-action-row>b{color:#d5e0e6;font:800 12px Manrope}
-.live-rec h2{margin:8px 0 4px;font:800 clamp(32px,7vw,48px)/1 Manrope}
+.live-rec h2{margin:8px 0 4px;font:800 clamp(22px,4.5vw,32px)/1.15 Manrope}
 .live-rec b{color:var(--cyan);font-size:14px}
 .live-rec p{color:#c5d3da;margin:8px 0 0;font-size:14px;line-height:1.5}
 .live-rec.go{border-color:#2f8f78;background:linear-gradient(180deg,#102820,var(--panel))}
 .live-rec.fold{border-color:#7b2838;background:linear-gradient(180deg,#2a1218,var(--panel))}
+.live-mix{gap:8px;margin:14px 0 4px;display:grid}
+.live-mix label{justify-content:space-between;font-size:13px;font-weight:700;display:flex}
+.live-mix em{color:var(--cyan);font-style:normal}
+.live-mix-bar{background:#1d2a34;border-radius:8px;height:8px;margin-top:5px;overflow:hidden}
+.live-mix-bar i{background:linear-gradient(90deg,var(--blue),var(--cyan));height:100%;display:block}
+.live-type-badge{border:1px solid var(--line);background:#0b141c;border-radius:12px;margin-bottom:12px;padding:12px 14px}
+.live-type-badge small{color:var(--muted);letter-spacing:1.4px;font-size:10px;font-weight:800}
+.live-type-badge strong{color:#fff;margin-top:4px;font:800 22px Manrope;display:block}
+.live-type-badge.on{border-color:var(--cyan);background:#102820}
+.live-type-badge.on strong{color:var(--cyan)}
 .live-editor{border:1px solid var(--line);background:#0e161f;border-radius:18px 18px 0 0;width:100%;max-height:88vh;padding:16px 16px 28px;overflow:auto}
 .live-editor-lead{color:var(--muted);margin:0 0 8px;font-size:13px;line-height:1.45}
 .live-stat-grid{grid-template-columns:repeat(2,1fr);gap:10px;margin:16px 0;display:grid}

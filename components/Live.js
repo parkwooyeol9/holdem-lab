@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { RotateCcw, X } from "lucide-react";
 import Card from "./Card";
 import { RANK_ORDER, SUIT_LIST, compactCards, holeLabel } from "@/lib/indicators";
-import { ARCHETYPES, POS_6, STAT_FIELDS, classify, emptyTable, hasRead } from "@/lib/villains";
+import { POS_6, STAT_FIELDS, classify, emptyStats, emptyTable, hasRead } from "@/lib/villains";
 import { legalActions, recommend } from "@/lib/preflop";
 
 const SEATS_KEY = "hl-live-seats";
@@ -152,9 +152,9 @@ export default function Live() {
     <div className="page live-page">
       <div className="live-top">
         <div>
-          <span className="tag">LIVE · 6-MAX</span>
-          <h1>Tag the table. Get a line.</h1>
-          <p>Save a read on each seat. When a hand starts, enter your cards and the action in front of you.</p>
+          <span className="tag">LIVE · 6-MAX HUD</span>
+          <h1>Tag the table. Get a mix.</h1>
+          <p>Enter ten HUD stats per seat. We label the player type and return fold / call / raise frequencies for this hand.</p>
         </div>
         <button className="ghost" type="button" onClick={nextHand}>
           <RotateCcw /> Next hand
@@ -195,7 +195,7 @@ export default function Live() {
           })}
           <div className="live-felt-core">6-max</div>
         </div>
-        <p className="live-felt-hint">Tap an opponent to enter VPIP / PFR / 3-bet, or just stamp a type.</p>
+        <p className="live-felt-hint">Tap an opponent and enter HUD stats. The seat shows their type (LAG, Fish, TAG…).</p>
       </section>
 
       <section className="live-cards">
@@ -243,10 +243,25 @@ export default function Live() {
         )}
       </section>
 
-      <section className={"live-rec" + (rec.action === "Fold" ? " fold" : rec.action === "—" ? "" : " go")}>
+      <section className={"live-rec" + (rec.action === "Fold" ? " fold" : rec.mix.length ? " go" : "")}>
         <small>RECOMMENDATION</small>
-        <h2>{rec.action}</h2>
+        <h2>{rec.headline}</h2>
         <b>{rec.detail}</b>
+        {rec.mix.length ? (
+          <div className="live-mix">
+            {rec.mix.map((m) => (
+              <div key={m.label}>
+                <label>
+                  <span>{m.label}</span>
+                  <em>{m.pct}%</em>
+                </label>
+                <div className="live-mix-bar">
+                  <i style={{ width: `${m.pct}%` }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : null}
         <p>{rec.reason}</p>
       </section>
 
@@ -254,30 +269,22 @@ export default function Live() {
         <div className="live-picker-scrim" onClick={() => setEditPos(null)}>
           <div className="live-editor" onClick={(e) => e.stopPropagation()}>
             <div className="live-picker-head">
-              <b>{editPos} read</b>
+              <b>{editPos} HUD</b>
               <button
                 type="button"
                 className="ghost"
                 onClick={() => {
-                  patchSeat(editPos, { tag: null, stats: { vpip: "", pfr: "", threeBet: "", foldTo3bet: "", wtsd: "" } });
+                  patchSeat(editPos, { stats: emptyStats() });
                 }}
               >
                 Clear
               </button>
             </div>
-            <p className="live-editor-lead">Stamp a type, or type frequencies if you have them. Both feed the same line.</p>
-            <div className="live-chips">
-              {ARCHETYPES.map((a) => (
-                <button
-                  key={a.id}
-                  type="button"
-                  className={editSeat.tag === a.id ? "on" : ""}
-                  onClick={() => patchSeat(editPos, { tag: editSeat.tag === a.id ? null : a.id })}
-                >
-                  {a.label}
-                </button>
-              ))}
+            <div className={"live-type-badge" + (hasRead(editSeat) ? " on" : "")}>
+              <small>PLAYER TYPE</small>
+              <strong>{classify(editSeat).label}</strong>
             </div>
+            <p className="live-editor-lead">Enter frequencies in percent. Type updates as you type.</p>
             <div className="live-stat-grid">
               {STAT_FIELDS.map((f) => (
                 <label key={f.key}>
@@ -288,8 +295,8 @@ export default function Live() {
                     max="100"
                     inputMode="decimal"
                     placeholder="%"
-                    value={editSeat.stats[f.key]}
-                    onChange={(e) => patchSeat(editPos, { tag: null, stats: { [f.key]: e.target.value } })}
+                    value={editSeat.stats[f.key] ?? ""}
+                    onChange={(e) => patchSeat(editPos, { stats: { [f.key]: e.target.value } })}
                   />
                 </label>
               ))}
