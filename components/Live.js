@@ -77,13 +77,13 @@ function loadHand() {
   }
 }
 
-function Slot({ card, label, onClick, onClear }) {
+function Slot({ card, label, onClick, onClear, compact }) {
   return (
-    <div className={"live-slot-wrap" + (card ? " filled" : "")}>
+    <div className={"live-slot-wrap" + (card ? " filled" : "") + (compact ? " board" : "")}>
       <button type="button" className={"live-slot" + (card ? "" : " empty")} onClick={onClick} aria-label={label}>
-        {card ? <Card c={card} /> : <span>+</span>}
+        {card ? <Card c={card} mini={compact} /> : <span>+</span>}
       </button>
-      <small>{label}</small>
+      {compact ? null : <small>{label}</small>}
       {card ? (
         <button type="button" className="live-slot-clear" onClick={onClear} aria-label={`Clear ${label}`}>
           <X />
@@ -219,7 +219,7 @@ export default function Live() {
         <div>
           <span className="tag">LIVE · 6-MAX HUD</span>
           <h1>Tag the table. Get a mix.</h1>
-          <p>Next hand는 버튼을 왼쪽으로 옮기고, 당신은 BTN → CO → HJ 순으로 갑니다. Postflop에서 플랍 3장을 깔고 액션을 넣으면 플랍 믹스가 나옵니다.</p>
+          <p>홀카드는 테이블 위, 플랍은 펠트 한가운데에 깔립니다. Postflop 다음 액션을 넣으면 바로 아래 추천이 나옵니다.</p>
         </div>
         <div className="live-top-actions">
           <button className={"ghost" + (hand.street === "flop" ? " on" : "")} type="button" onClick={goFlop}>
@@ -240,7 +240,22 @@ export default function Live() {
             </button>
           ))}
         </div>
-        <div className="live-felt">
+        <div className="live-hole-row">
+          <small>YOUR HAND</small>
+          <div className="live-slots compact">
+            {hand.hole.map((c, i) => (
+              <Slot
+                key={`h${i}`}
+                card={c}
+                compact
+                label={i === 0 ? "Card 1" : "Card 2"}
+                onClick={() => setPicker({ pile: "hole", index: i })}
+                onClear={() => setCard("hole", i, null)}
+              />
+            ))}
+          </div>
+        </div>
+        <div className={"live-felt" + (hand.street === "flop" ? " has-board" : "")}>
           {seats.map((seat) => {
             const pos = positionOf(seat.id, hand.buttonSeat);
             const isHero = seat.id === HERO_SEAT;
@@ -266,90 +281,43 @@ export default function Live() {
               </button>
             );
           })}
-          <div className="live-felt-core">D moves clockwise</div>
-        </div>
-        <p className="live-felt-hint">
-          지금 {heroPos}. Next hand 당신은 {nextHeroPos} (버튼 다음은 블라인드가 아니라 CO → HJ). HUD는 같은 사람에게 남습니다.
-        </p>
-      </section>
-
-      <section className="live-hud-panel">
-        <small>10 HUD STATS</small>
-        <div className="live-picker-head">
-          <b>
-            {editPos}
-            {hasRead(editSeat) ? ` · ${editRead.label}` : " · tap a seat"}
-          </b>
-          <button type="button" className="ghost" onClick={() => patchSeat(editSeatId, { stats: emptyStats() })}>
-            Clear
-          </button>
-        </div>
-        <div className={"live-type-badge" + (hasRead(editSeat) ? " on" : "")}>
-          <small>PLAYER TYPE</small>
-          <strong>{editRead.label}</strong>
-          <p className="live-exploit">{editRead.exploit}</p>
-        </div>
-        <p className="live-editor-lead">자리를 탭한 뒤 VPIP부터 W$SD까지 10개를 입력하세요. 유형과 공략 한 줄은 입력하는 즉시 바뀝니다.</p>
-        <div className="live-stat-grid">
-          {STAT_FIELDS.map((f) => (
-            <label key={f.key}>
-              <small>{f.label}</small>
-              <input
-                type="number"
-                min="0"
-                max="100"
-                inputMode="decimal"
-                placeholder="%"
-                value={editSeat?.stats?.[f.key] ?? ""}
-                onChange={(e) => patchSeat(editSeatId, { stats: { [f.key]: e.target.value } })}
-              />
-            </label>
-          ))}
-        </div>
-      </section>
-
-      <section className="live-cards">
-        <div>
-          <small>YOUR HAND</small>
-          <div className="live-slots">
-            {hand.hole.map((c, i) => (
-              <Slot
-                key={`h${i}`}
-                card={c}
-                label={i === 0 ? "Card 1" : "Card 2"}
-                onClick={() => setPicker({ pile: "hole", index: i })}
-                onClear={() => setCard("hole", i, null)}
-              />
-            ))}
-          </div>
-        </div>
-        {hand.street === "flop" ? (
-          <div>
-            <small>FLOP</small>
-            <div className="live-slots">
-              {(hand.flop || [null, null, null]).map((c, i) => (
+          <div className="live-board">
+            {hand.street === "flop" ? (
+              (hand.flop || [null, null, null]).map((c, i) => (
                 <Slot
                   key={`f${i}`}
                   card={c}
-                  label={i === 0 ? "Flop 1" : i === 1 ? "Flop 2" : "Flop 3"}
+                  compact
+                  label={`Flop ${i + 1}`}
                   onClick={() => setPicker({ pile: "flop", index: i })}
                   onClear={() => setCard("flop", i, null)}
                 />
-              ))}
-            </div>
+              ))
+            ) : (
+              <button type="button" className="live-board-deal" onClick={goFlop}>
+                플랍 깔기
+              </button>
+            )}
           </div>
-        ) : null}
+        </div>
+        <p className="live-felt-hint">
+          {hand.street === "flop"
+            ? "테이블 중앙에 플랍 3장을 깔고, 아래 액션을 넣은 뒤 바로 추천을 보세요."
+            : `지금 ${heroPos}. Next hand 당신은 ${nextHeroPos}. 플랍은 테이블 가운데를 누르세요.`}
+        </p>
       </section>
 
       {hand.street === "flop" ? (
         <section className="live-actions">
           <small>FLOP ACTION IN FRONT</small>
           {flopPlayers.length === 0 ? (
-            <p>플랍 첫 액션입니다. 보드 3장을 깐 뒤 추천을 보세요.</p>
+            <p>당신 앞 액션이 없습니다. 플랍 3장만 깔아도 바로 추천이 나옵니다. 누가 벳하면 아래에서 바꾸세요.</p>
           ) : (
             flopPlayers.map((pos) => {
               const alive = flopPlayers.concat(heroPos);
               const options = legalFlopActions(hand.flopActions, pos, alive);
+              const stored = hand.flopActions?.[pos];
+              const current = stored || (options.includes("check") ? "check" : "");
               return (
                 <div className="live-action-row" key={pos}>
                   <b>{pos}</b>
@@ -358,7 +326,7 @@ export default function Live() {
                       <button
                         key={act}
                         type="button"
-                        className={hand.flopActions?.[pos] === act ? "on" : ""}
+                        className={current === act ? "on" : ""}
                         onClick={() => setFlopAction(pos, act)}
                       >
                         {FLOP_ACTION_LABEL[act]}
@@ -420,6 +388,41 @@ export default function Live() {
           </div>
         ) : null}
         <p>{rec.reason}</p>
+      </section>
+
+      <section className="live-hud-panel">
+        <small>10 HUD STATS</small>
+        <div className="live-picker-head">
+          <b>
+            {editPos}
+            {hasRead(editSeat) ? ` · ${editRead.label}` : " · tap a seat"}
+          </b>
+          <button type="button" className="ghost" onClick={() => patchSeat(editSeatId, { stats: emptyStats() })}>
+            Clear
+          </button>
+        </div>
+        <div className={"live-type-badge" + (hasRead(editSeat) ? " on" : "")}>
+          <small>PLAYER TYPE</small>
+          <strong>{editRead.label}</strong>
+          <p className="live-exploit">{editRead.exploit}</p>
+        </div>
+        <p className="live-editor-lead">자리를 탭한 뒤 VPIP부터 W$SD까지 10개를 입력하세요. 유형과 공략 한 줄은 입력하는 즉시 바뀝니다.</p>
+        <div className="live-stat-grid">
+          {STAT_FIELDS.map((f) => (
+            <label key={f.key}>
+              <small>{f.label}</small>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                inputMode="decimal"
+                placeholder="%"
+                value={editSeat?.stats?.[f.key] ?? ""}
+                onChange={(e) => patchSeat(editSeatId, { stats: { [f.key]: e.target.value } })}
+              />
+            </label>
+          ))}
+        </div>
       </section>
 
       <section className="live-guide">
