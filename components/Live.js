@@ -7,6 +7,7 @@ import { RANK_ORDER, SUIT_LIST, compactCards, holeLabel } from "@/lib/indicators
 import {
   HERO_SEAT,
   POS_6,
+  PREFLOP_ORDER,
   SEAT_COUNT,
   STAT_FIELDS,
   advanceButton,
@@ -20,7 +21,7 @@ import {
   seatOfPosition
 } from "@/lib/villains";
 import { legalActions, recommend } from "@/lib/preflop";
-import { FLOP_ACTION_LABEL, flopAhead, legalFlopActions, recommendFlop } from "@/lib/flop";
+import { FLOP_ACTION_LABEL, alivePositions, flopStreet, legalFlopActions, recommendFlop } from "@/lib/flop";
 
 const SEATS_KEY = "hl-live-seats-v2";
 const HAND_KEY = "hl-live-hand-v3";
@@ -140,8 +141,8 @@ export default function Live() {
     }
     return recommend({ hole: hand.hole, heroPos, actions: hand.actions, seats: seatsByPos });
   }, [hand.street, hand.hole, hand.flop, hand.actions, hand.flopActions, heroPos, seatsByPos]);
-  const ahead = POS_6.slice(0, POS_6.indexOf(heroPos));
-  const flopPlayers = flopAhead(heroPos, hand.actions);
+  const flopRows = flopStreet(hand.actions, heroPos);
+  const flopAlive = alivePositions(hand.actions, heroPos);
   const editSeat = seats[editSeatId] || seats[1];
   const editRead = classify(editSeat);
   const editPos = positionOf(editSeatId, hand.buttonSeat);
@@ -184,7 +185,8 @@ export default function Live() {
     setHand((h) => {
       const cur = h.flopActions || {};
       const flopActions = { ...cur, [pos]: cur[pos] === action ? "" : action };
-      const alive = flopAhead(heroPosition(h.buttonSeat), h.actions).concat(heroPosition(h.buttonSeat));
+      const hp = heroPosition(h.buttonSeat);
+      const alive = alivePositions(h.actions, hp);
       const idx = alive.indexOf(pos);
       for (const later of alive.slice(idx + 1)) {
         if (!flopActions[later]) continue;
@@ -307,20 +309,58 @@ export default function Live() {
         </p>
       </section>
 
+      <section className="live-actions">
+        <small>PREFLOP ACTION · UTG FIRST</small>
+        <p>UTG → HJ → CO → BTN → SB → BB. 6명 모두 넣습니다. 당신 자리는 아래 추천입니다.</p>
+        {PREFLOP_ORDER.map((pos) => {
+          const you = pos === heroPos;
+          const options = legalActions(hand.actions, pos);
+          return (
+            <div className={"live-action-row" + (you ? " you" : "")} key={`pre-${pos}`}>
+              <b>
+                {pos}
+                {you ? " · YOU" : ""}
+              </b>
+              {you ? (
+                <span className="live-you-wait">아래 추천</span>
+              ) : (
+                <div className="live-chips compact">
+                  {options.map((act) => (
+                    <button
+                      key={act}
+                      type="button"
+                      className={hand.actions[pos] === act ? "on" : ""}
+                      onClick={() => setAction(pos, act)}
+                    >
+                      {ACTION_LABEL[act]}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </section>
+
       {hand.street === "flop" ? (
-        <section className="live-actions">
-          <small>FLOP ACTION IN FRONT</small>
-          {flopPlayers.length === 0 ? (
-            <p>당신 앞 액션이 없습니다. 플랍 3장만 깔아도 바로 추천이 나옵니다. 누가 벳하면 아래에서 바꾸세요.</p>
-          ) : (
-            flopPlayers.map((pos) => {
-              const alive = flopPlayers.concat(heroPos);
-              const options = legalFlopActions(hand.flopActions, pos, alive);
-              const stored = hand.flopActions?.[pos];
-              const current = stored || (options.includes("check") ? "check" : "");
-              return (
-                <div className="live-action-row" key={pos}>
-                  <b>{pos}</b>
+        <section className="live-actions live-actions-post">
+          <small>POSTFLOP ACTION · UTG FIRST</small>
+          <p>플랍도 UTG부터 6명입니다. 접은 자리는 Folded. 액션을 바꾸면 아래 추천이 바로 갱신됩니다.</p>
+          {flopRows.map(({ pos, folded, you }) => {
+            const options = legalFlopActions(hand.flopActions, pos, flopAlive);
+            const stored = hand.flopActions?.[pos];
+            const current = stored || (options.includes("check") ? "check" : "");
+            return (
+              <div className={"live-action-row" + (you ? " you" : "") + (folded ? " folded" : "")} key={`post-${pos}`}>
+                <b>
+                  {pos}
+                  {you ? " · YOU" : ""}
+                </b>
+                {you ? (
+                  <span className="live-you-wait">아래 플랍 추천</span>
+                ) : folded ? (
+                  <span className="live-you-wait">Folded</span>
+                ) : (
                   <div className="live-chips compact">
                     {options.map((act) => (
                       <button
@@ -333,40 +373,12 @@ export default function Live() {
                       </button>
                     ))}
                   </div>
-                </div>
-              );
-            })
-          )}
+                )}
+              </div>
+            );
+          })}
         </section>
-      ) : (
-        <section className="live-actions">
-          <small>ACTION IN FRONT</small>
-          {ahead.length === 0 ? (
-            <p>You are UTG. No action in front — this is an open-or-fold.</p>
-          ) : (
-            ahead.map((pos) => {
-              const options = legalActions(hand.actions, pos);
-              return (
-                <div className="live-action-row" key={pos}>
-                  <b>{pos}</b>
-                  <div className="live-chips compact">
-                    {options.map((act) => (
-                      <button
-                        key={act}
-                        type="button"
-                        className={hand.actions[pos] === act ? "on" : ""}
-                        onClick={() => setAction(pos, act)}
-                      >
-                        {ACTION_LABEL[act]}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </section>
-      )}
+      ) : null}
 
       <section className={"live-rec" + (rec.action === "Fold" ? " fold" : rec.mix.length ? " go" : "")}>
         <small>{hand.street === "flop" ? "FLOP RECOMMENDATION" : "RECOMMENDATION"}</small>
