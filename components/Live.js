@@ -124,6 +124,7 @@ export default function Live() {
   );
   const ahead = POS_6.slice(0, POS_6.indexOf(heroPos));
   const editSeat = seats[editSeatId] || seats[1];
+  const editRead = classify(editSeat);
   const editPos = positionOf(editSeatId, hand.buttonSeat);
   const pickCode = picker != null ? hand.hole[picker] : null;
 
@@ -170,7 +171,7 @@ export default function Live() {
         <div>
           <span className="tag">LIVE · 6-MAX HUD</span>
           <h1>Tag the table. Get a mix.</h1>
-          <p>테이블 아래 10칸 HUD에 숫자를 넣으세요. Next hand는 딜러 버튼을 다음 자리로 옮기고 카드를 지웁니다.</p>
+          <p>테이블 아래 10칸 HUD에 숫자를 넣으세요. Next hand는 딜러 버튼(D)을 시계방향(왼쪽)으로 옮기고 카드를 지웁니다.</p>
         </div>
         <button className="ghost" type="button" onClick={nextHand}>
           <RotateCcw /> Next hand · {nextHeroPos}
@@ -212,10 +213,10 @@ export default function Live() {
               </button>
             );
           })}
-          <div className="live-felt-core">D = dealer · Next hand moves it</div>
+          <div className="live-felt-core">D moves clockwise</div>
         </div>
         <p className="live-felt-hint">
-          You are {heroPos}. Next hand you become {nextHeroPos}. HUD stays on the same people.
+          지금 {heroPos}. Next hand는 버튼이 왼쪽으로 가고 당신은 {nextHeroPos}. HUD는 같은 사람에게 남습니다.
         </p>
       </section>
 
@@ -224,7 +225,7 @@ export default function Live() {
         <div className="live-picker-head">
           <b>
             {editPos}
-            {hasRead(editSeat) ? ` · ${classify(editSeat).label}` : " · tap a seat"}
+            {hasRead(editSeat) ? ` · ${editRead.label}` : " · tap a seat"}
           </b>
           <button type="button" className="ghost" onClick={() => patchSeat(editSeatId, { stats: emptyStats() })}>
             Clear
@@ -232,9 +233,10 @@ export default function Live() {
         </div>
         <div className={"live-type-badge" + (hasRead(editSeat) ? " on" : "")}>
           <small>PLAYER TYPE</small>
-          <strong>{classify(editSeat).label}</strong>
+          <strong>{editRead.label}</strong>
+          <p className="live-exploit">{editRead.exploit}</p>
         </div>
-        <p className="live-editor-lead">자리를 탭한 뒤 VPIP부터 W$SD까지 10개를 입력하세요. 유형은 입력하는 즉시 바뀝니다.</p>
+        <p className="live-editor-lead">자리를 탭한 뒤 VPIP부터 W$SD까지 10개를 입력하세요. 유형과 공략 한 줄은 입력하는 즉시 바뀝니다.</p>
         <div className="live-stat-grid">
           {STAT_FIELDS.map((f) => (
             <label key={f.key}>
@@ -318,6 +320,32 @@ export default function Live() {
           </div>
         ) : null}
         <p>{rec.reason}</p>
+      </section>
+
+      <section className="live-guide">
+        <small>HUD GUIDE</small>
+        <h2>10개 지표로 유형을 나누는 법</h2>
+        <p>숫자를 넣을수록 라벨이 정확해집니다. 한두 칸만 넣으면 TAG/LAG로 기울 수 있습니다.</p>
+        <div className="live-guide-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>지표</th>
+                <th>의미</th>
+                <th>분류</th>
+              </tr>
+            </thead>
+            <tbody>
+              {STAT_FIELDS.map((f) => (
+                <tr key={f.key}>
+                  <th>{f.label}</th>
+                  <td>{f.what}</td>
+                  <td>{f.rule}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </section>
 
       {picker != null && (
