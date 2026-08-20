@@ -3,6 +3,9 @@
 .live-top h1{margin:8px 0 6px;font:800 clamp(26px,5vw,36px)/1.1 Manrope}
 .live-top p{color:var(--muted);margin:0;font-size:14px;line-height:1.5}
 .live-top .ghost{flex:none;align-items:center}
+.live-top-actions{display:flex;flex-wrap:wrap;gap:8px}
+.live-top-actions .ghost.on{color:#061310;background:var(--cyan);border-color:var(--cyan)}
+.live-cards{display:grid;gap:16px}
 .live-felt-card,.live-cards,.live-actions,.live-rec,.live-hud-panel,.live-guide{border:1px solid var(--line);background:var(--panel);border-radius:16px;margin-bottom:12px;padding:16px}
 .live-felt-card>small,.live-cards small,.live-actions>small,.live-rec small,.live-hud-panel>small,.live-guide>small,.live-stat-grid small{color:var(--cyan);letter-spacing:1.4px;font-size:10px;font-weight:800}
 .live-felt-hint{color:var(--muted);margin:10px 0 0;font-size:12px}

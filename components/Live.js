@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { RotateCcw, X } from "lucide-react";
+import { Layers, RotateCcw, X } from "lucide-react";
 import Card from "./Card";
 import { RANK_ORDER, SUIT_LIST, compactCards, holeLabel } from "@/lib/indicators";
 import {
@@ -20,9 +20,10 @@ import {
   seatOfPosition
 } from "@/lib/villains";
 import { legalActions, recommend } from "@/lib/preflop";
+import { FLOP_ACTION_LABEL, flopAhead, legalFlopActions, recommendFlop } from "@/lib/flop";
 
 const SEATS_KEY = "hl-live-seats-v2";
-const HAND_KEY = "hl-live-hand-v2";
+const HAND_KEY = "hl-live-hand-v3";
 
 const ACTION_LABEL = {
   fold: "Fold",
@@ -31,14 +32,19 @@ const ACTION_LABEL = {
   call: "Call",
   "3bet": "3-bet",
   "4bet": "4-bet",
-  check: "Check"
+  check: "Check",
+  bet: "Bet",
+  raise: "Raise"
 };
 
 function emptyHand(buttonSeat = 0) {
   return {
     buttonSeat,
+    street: "preflop",
     hole: [null, null],
-    actions: Object.fromEntries(POS_6.map((pos) => [pos, ""]))
+    flop: [null, null, null],
+    actions: Object.fromEntries(POS_6.map((pos) => [pos, ""])),
+    flopActions: Object.fromEntries(POS_6.map((pos) => [pos, ""]))
   };
 }
 
@@ -61,7 +67,10 @@ function loadHand() {
     return {
       ...emptyHand(buttonSeat),
       hole: [parsed.hole?.[0] || null, parsed.hole?.[1] || null],
-      actions: { ...emptyHand().actions, ...parsed.actions }
+      flop: [parsed.flop?.[0] || null, parsed.flop?.[1] || null, parsed.flop?.[2] || null],
+      actions: { ...emptyHand().actions, ...parsed.actions },
+      flopActions: { ...emptyHand().flopActions, ...parsed.flopActions },
+      street: parsed.street === "flop" ? "flop" : "preflop"
     };
   } catch {
     return emptyHand();
@@ -113,20 +122,30 @@ export default function Live() {
 
   const heroPos = heroPosition(hand.buttonSeat);
   const nextHeroPos = heroPosition(advanceButton(hand.buttonSeat));
-  const used = useMemo(() => new Set(compactCards(hand.hole)), [hand.hole]);
+  const used = useMemo(() => new Set(compactCards([...(hand.hole || []), ...(hand.flop || [])])), [hand.hole, hand.flop]);
   const seatsByPos = useMemo(
     () => Object.fromEntries(POS_6.map((pos) => [pos, seats[seatOfPosition(pos, hand.buttonSeat)]])),
     [seats, hand.buttonSeat]
   );
-  const rec = useMemo(
-    () => recommend({ hole: hand.hole, heroPos, actions: hand.actions, seats: seatsByPos }),
-    [hand.hole, hand.actions, heroPos, seatsByPos]
-  );
+  const rec = useMemo(() => {
+    if (hand.street === "flop") {
+      return recommendFlop({
+        hole: hand.hole,
+        flop: hand.flop,
+        heroPos,
+        actions: hand.actions,
+        flopActions: hand.flopActions,
+        seats: seatsByPos
+      });
+    }
+    return recommend({ hole: hand.hole, heroPos, actions: hand.actions, seats: seatsByPos });
+  }, [hand.street, hand.hole, hand.flop, hand.actions, hand.flopActions, heroPos, seatsByPos]);
   const ahead = POS_6.slice(0, POS_6.indexOf(heroPos));
+  const flopPlayers = flopAhead(heroPos, hand.actions);
   const editSeat = seats[editSeatId] || seats[1];
   const editRead = classify(editSeat);
   const editPos = positionOf(editSeatId, hand.buttonSeat);
-  const pickCode = picker != null ? hand.hole[picker] : null;
+  const pickCode = picker?.pile === "flop" ? hand.flop?.[picker.index] : picker ? hand.hole[picker.index] : null;
 
   const setHeroPos = (pos) => {
     setHand((h) => ({
@@ -135,8 +154,13 @@ export default function Live() {
     }));
   };
 
-  const setCard = (index, code) => {
+  const setCard = (pile, index, code) => {
     setHand((h) => {
+      if (pile === "flop") {
+        const flop = [...(h.flop || [null, null, null])];
+        flop[index] = code;
+        return { ...h, flop };
+      }
       const hole = [...h.hole];
       hole[index] = code;
       return { ...h, hole };
@@ -156,6 +180,20 @@ export default function Live() {
     });
   };
 
+  const setFlopAction = (pos, action) => {
+    setHand((h) => {
+      const cur = h.flopActions || {};
+      const flopActions = { ...cur, [pos]: cur[pos] === action ? "" : action };
+      const alive = flopAhead(heroPosition(h.buttonSeat), h.actions).concat(heroPosition(h.buttonSeat));
+      const idx = alive.indexOf(pos);
+      for (const later of alive.slice(idx + 1)) {
+        if (!flopActions[later]) continue;
+        if (!legalFlopActions(flopActions, later, alive).includes(flopActions[later])) flopActions[later] = "";
+      }
+      return { ...h, flopActions };
+    });
+  };
+
   const patchSeat = (id, patch) => {
     setSeats((list) => list.map((seat) => (seat.id === id ? { ...seat, ...patch, stats: { ...seat.stats, ...(patch.stats || {}) } } : seat)));
   };
@@ -165,17 +203,32 @@ export default function Live() {
     setHand((h) => emptyHand(advanceButton(h.buttonSeat)));
   };
 
+  const goFlop = () => {
+    setPicker(null);
+    setHand((h) => ({
+      ...h,
+      street: "flop",
+      flop: h.flop?.[0] || h.flop?.[1] || h.flop?.[2] ? h.flop : [null, null, null],
+      flopActions: h.street === "flop" ? h.flopActions : Object.fromEntries(POS_6.map((pos) => [pos, ""]))
+    }));
+  };
+
   return (
     <div className="page live-page">
       <div className="live-top">
         <div>
           <span className="tag">LIVE · 6-MAX HUD</span>
           <h1>Tag the table. Get a mix.</h1>
-          <p>테이블 아래 10칸 HUD에 숫자를 넣으세요. Next hand는 딜러 버튼(D)을 시계방향(왼쪽)으로 옮기고 카드를 지웁니다.</p>
+          <p>Next hand는 버튼을 왼쪽으로 옮기고, 당신은 BTN → CO → HJ 순으로 갑니다. Postflop에서 플랍 3장을 깔고 액션을 넣으면 플랍 믹스가 나옵니다.</p>
         </div>
-        <button className="ghost" type="button" onClick={nextHand}>
-          <RotateCcw /> Next hand · {nextHeroPos}
-        </button>
+        <div className="live-top-actions">
+          <button className={"ghost" + (hand.street === "flop" ? " on" : "")} type="button" onClick={goFlop}>
+            <Layers /> Postflop
+          </button>
+          <button className="ghost" type="button" onClick={nextHand}>
+            <RotateCcw /> Next hand · {nextHeroPos}
+          </button>
+        </div>
       </div>
 
       <section className="live-felt-card">
@@ -192,7 +245,7 @@ export default function Live() {
             const pos = positionOf(seat.id, hand.buttonSeat);
             const isHero = seat.id === HERO_SEAT;
             const isBtn = pos === "BTN";
-            const acted = hand.actions[pos];
+            const acted = hand.street === "flop" ? hand.flopActions?.[pos] : hand.actions[pos];
             const read = classify(seat);
             return (
               <button
@@ -216,7 +269,7 @@ export default function Live() {
           <div className="live-felt-core">D moves clockwise</div>
         </div>
         <p className="live-felt-hint">
-          지금 {heroPos}. Next hand는 버튼이 왼쪽으로 가고 당신은 {nextHeroPos}. HUD는 같은 사람에게 남습니다.
+          지금 {heroPos}. Next hand 당신은 {nextHeroPos} (버튼 다음은 블라인드가 아니라 CO → HJ). HUD는 같은 사람에게 남습니다.
         </p>
       </section>
 
@@ -264,44 +317,91 @@ export default function Live() {
                 key={`h${i}`}
                 card={c}
                 label={i === 0 ? "Card 1" : "Card 2"}
-                onClick={() => setPicker(i)}
-                onClear={() => setCard(i, null)}
+                onClick={() => setPicker({ pile: "hole", index: i })}
+                onClear={() => setCard("hole", i, null)}
               />
             ))}
           </div>
         </div>
+        {hand.street === "flop" ? (
+          <div>
+            <small>FLOP</small>
+            <div className="live-slots">
+              {(hand.flop || [null, null, null]).map((c, i) => (
+                <Slot
+                  key={`f${i}`}
+                  card={c}
+                  label={i === 0 ? "Flop 1" : i === 1 ? "Flop 2" : "Flop 3"}
+                  onClick={() => setPicker({ pile: "flop", index: i })}
+                  onClear={() => setCard("flop", i, null)}
+                />
+              ))}
+            </div>
+          </div>
+        ) : null}
       </section>
 
-      <section className="live-actions">
-        <small>ACTION IN FRONT</small>
-        {ahead.length === 0 ? (
-          <p>You are UTG. No action in front — this is an open-or-fold.</p>
-        ) : (
-          ahead.map((pos) => {
-            const options = legalActions(hand.actions, pos);
-            return (
-              <div className="live-action-row" key={pos}>
-                <b>{pos}</b>
-                <div className="live-chips compact">
-                  {options.map((act) => (
-                    <button
-                      key={act}
-                      type="button"
-                      className={hand.actions[pos] === act ? "on" : ""}
-                      onClick={() => setAction(pos, act)}
-                    >
-                      {ACTION_LABEL[act]}
-                    </button>
-                  ))}
+      {hand.street === "flop" ? (
+        <section className="live-actions">
+          <small>FLOP ACTION IN FRONT</small>
+          {flopPlayers.length === 0 ? (
+            <p>플랍 첫 액션입니다. 보드 3장을 깐 뒤 추천을 보세요.</p>
+          ) : (
+            flopPlayers.map((pos) => {
+              const alive = flopPlayers.concat(heroPos);
+              const options = legalFlopActions(hand.flopActions, pos, alive);
+              return (
+                <div className="live-action-row" key={pos}>
+                  <b>{pos}</b>
+                  <div className="live-chips compact">
+                    {options.map((act) => (
+                      <button
+                        key={act}
+                        type="button"
+                        className={hand.flopActions?.[pos] === act ? "on" : ""}
+                        onClick={() => setFlopAction(pos, act)}
+                      >
+                        {FLOP_ACTION_LABEL[act]}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            );
-          })
-        )}
-      </section>
+              );
+            })
+          )}
+        </section>
+      ) : (
+        <section className="live-actions">
+          <small>ACTION IN FRONT</small>
+          {ahead.length === 0 ? (
+            <p>You are UTG. No action in front — this is an open-or-fold.</p>
+          ) : (
+            ahead.map((pos) => {
+              const options = legalActions(hand.actions, pos);
+              return (
+                <div className="live-action-row" key={pos}>
+                  <b>{pos}</b>
+                  <div className="live-chips compact">
+                    {options.map((act) => (
+                      <button
+                        key={act}
+                        type="button"
+                        className={hand.actions[pos] === act ? "on" : ""}
+                        onClick={() => setAction(pos, act)}
+                      >
+                        {ACTION_LABEL[act]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </section>
+      )}
 
       <section className={"live-rec" + (rec.action === "Fold" ? " fold" : rec.mix.length ? " go" : "")}>
-        <small>RECOMMENDATION</small>
+        <small>{hand.street === "flop" ? "FLOP RECOMMENDATION" : "RECOMMENDATION"}</small>
         <h2>{rec.headline}</h2>
         <b>{rec.detail}</b>
         {rec.mix.length ? (
@@ -352,8 +452,8 @@ export default function Live() {
         <div className="live-picker-scrim" onClick={() => setPicker(null)}>
           <div className="live-picker" onClick={(e) => e.stopPropagation()}>
             <div className="live-picker-head">
-              <b>Pick a card</b>
-              <button type="button" className="ghost" onClick={() => setCard(picker, null)}>
+              <b>{picker.pile === "flop" ? "Pick a flop card" : "Pick a card"}</b>
+              <button type="button" className="ghost" onClick={() => setCard(picker.pile, picker.index, null)}>
                 Clear
               </button>
             </div>
@@ -371,7 +471,7 @@ export default function Live() {
                         type="button"
                         disabled={taken}
                         className={"live-grid-card" + (red ? " red" : "") + (selected ? " on" : "")}
-                        onClick={() => setCard(picker, code)}
+                        onClick={() => setCard(picker.pile, picker.index, code)}
                       >
                         <b>{rank}</b>
                         <span>{suit.icon}</span>
