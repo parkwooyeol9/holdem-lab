@@ -3,8 +3,8 @@
 .live-top h1{margin:8px 0 6px;font:800 clamp(26px,5vw,36px)/1.1 Manrope}
 .live-top p{color:var(--muted);margin:0;font-size:14px;line-height:1.5}
 .live-top .ghost{flex:none;align-items:center}
-.live-felt-card,.live-cards,.live-actions,.live-rec,.live-hud-panel{border:1px solid var(--line);background:var(--panel);border-radius:16px;margin-bottom:12px;padding:16px}
-.live-felt-card>small,.live-cards small,.live-actions>small,.live-rec small,.live-hud-panel>small,.live-stat-grid small{color:var(--cyan);letter-spacing:1.4px;font-size:10px;font-weight:800}
+.live-felt-card,.live-cards,.live-actions,.live-rec,.live-hud-panel,.live-guide{border:1px solid var(--line);background:var(--panel);border-radius:16px;margin-bottom:12px;padding:16px}
+.live-felt-card>small,.live-cards small,.live-actions>small,.live-rec small,.live-hud-panel>small,.live-guide>small,.live-stat-grid small{color:var(--cyan);letter-spacing:1.4px;font-size:10px;font-weight:800}
 .live-felt-hint{color:var(--muted);margin:10px 0 0;font-size:12px}
 .live-felt{background:radial-gradient(circle,#195249,#0b2a27 62%);border:8px solid #253443;border-radius:40%;height:320px;margin:16px 8px 0;position:relative}
 .live-felt-core{color:#8bb9af;letter-spacing:2px;text-transform:uppercase;font:800 11px Manrope;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
@@ -53,6 +53,15 @@
 .live-type-badge strong{color:#fff;margin-top:4px;font:800 22px Manrope;display:block}
 .live-type-badge.on{border-color:var(--cyan);background:#102820}
 .live-type-badge.on strong{color:var(--cyan)}
+.live-exploit{color:#c5d3da;margin:8px 0 0;font-size:14px;line-height:1.5}
+.live-guide h2{margin:8px 0 6px;font:800 18px Manrope}
+.live-guide>p{color:var(--muted);margin:0 0 12px;font-size:13px;line-height:1.5}
+.live-guide-wrap{overflow:auto}
+.live-guide table{border-collapse:collapse;width:100%;min-width:520px}
+.live-guide th,.live-guide td{border-bottom:1px solid var(--line);text-align:left;vertical-align:top;padding:10px 8px;font-size:13px;line-height:1.45}
+.live-guide thead th{color:var(--cyan);letter-spacing:.06em;font-size:11px}
+.live-guide tbody th{color:#fff;white-space:nowrap;font:800 13px Manrope}
+.live-guide td{color:#c5d3da}
 .live-editor{border:1px solid var(--line);background:#0e161f;border-radius:18px 18px 0 0;width:100%;max-height:88vh;padding:16px 16px 28px;overflow:auto}
 .live-editor-lead{color:var(--muted);margin:0 0 8px;font-size:13px;line-height:1.45}
 .live-stat-grid{grid-template-columns:repeat(2,1fr);gap:10px;margin:16px 0;display:grid}
