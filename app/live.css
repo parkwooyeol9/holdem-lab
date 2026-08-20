@@ -3,8 +3,8 @@
 .live-top h1{margin:8px 0 6px;font:800 clamp(26px,5vw,36px)/1.1 Manrope}
 .live-top p{color:var(--muted);margin:0;font-size:14px;line-height:1.5}
 .live-top .ghost{flex:none;align-items:center}
-.live-felt-card,.live-cards,.live-actions,.live-rec{border:1px solid var(--line);background:var(--panel);border-radius:16px;margin-bottom:12px;padding:16px}
-.live-felt-card>small,.live-cards small,.live-actions>small,.live-rec small,.live-stat-grid small{color:var(--cyan);letter-spacing:1.4px;font-size:10px;font-weight:800}
+.live-felt-card,.live-cards,.live-actions,.live-rec,.live-hud-panel{border:1px solid var(--line);background:var(--panel);border-radius:16px;margin-bottom:12px;padding:16px}
+.live-felt-card>small,.live-cards small,.live-actions>small,.live-rec small,.live-hud-panel>small,.live-stat-grid small{color:var(--cyan);letter-spacing:1.4px;font-size:10px;font-weight:800}
 .live-felt-hint{color:var(--muted);margin:10px 0 0;font-size:12px}
 .live-felt{background:radial-gradient(circle,#195249,#0b2a27 62%);border:8px solid #253443;border-radius:40%;height:320px;margin:16px 8px 0;position:relative}
 .live-felt-core{color:#8bb9af;letter-spacing:2px;text-transform:uppercase;font:800 11px Manrope;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
@@ -15,6 +15,8 @@
 .live-seat em{color:#061310;background:var(--gold);border-radius:999px;margin-top:6px;padding:2px 7px;font:800 9px DM Sans;font-style:normal;display:inline-block}
 .live-seat.hero{cursor:default;border-color:var(--cyan);box-shadow:0 0 0 2px #4ee7c044}
 .live-seat.tagged{border-color:#4ee7c088}
+.live-seat.selected{border-color:var(--gold);box-shadow:0 0 0 2px #f3bd5b55}
+.live-dealer{color:#061310;background:var(--gold);border-radius:50%;place-items:center;width:18px;height:18px;font:800 9px Manrope;font-style:normal;display:grid;position:absolute;top:-8px;left:-8px}
 .live-seat-0{top:88%;left:50%}
 .live-seat-1{top:68%;left:12%}
 .live-seat-2{top:22%;left:18%}
@@ -36,11 +38,21 @@
 .live-actions p{color:var(--muted);margin:10px 0 0;font-size:13px}
 .live-action-row{border-top:1px solid var(--line);align-items:center;gap:10px;margin-top:10px;padding-top:10px;display:grid;grid-template-columns:52px 1fr}
 .live-action-row>b{color:#d5e0e6;font:800 12px Manrope}
-.live-rec h2{margin:8px 0 4px;font:800 clamp(32px,7vw,48px)/1 Manrope}
+.live-rec h2{margin:8px 0 4px;font:800 clamp(22px,4.5vw,32px)/1.15 Manrope}
 .live-rec b{color:var(--cyan);font-size:14px}
 .live-rec p{color:#c5d3da;margin:8px 0 0;font-size:14px;line-height:1.5}
 .live-rec.go{border-color:#2f8f78;background:linear-gradient(180deg,#102820,var(--panel))}
 .live-rec.fold{border-color:#7b2838;background:linear-gradient(180deg,#2a1218,var(--panel))}
+.live-mix{gap:8px;margin:14px 0 4px;display:grid}
+.live-mix label{justify-content:space-between;font-size:13px;font-weight:700;display:flex}
+.live-mix em{color:var(--cyan);font-style:normal}
+.live-mix-bar{background:#1d2a34;border-radius:8px;height:8px;margin-top:5px;overflow:hidden}
+.live-mix-bar i{background:linear-gradient(90deg,var(--blue),var(--cyan));height:100%;display:block}
+.live-type-badge{border:1px solid var(--line);background:#0b141c;border-radius:12px;margin-bottom:12px;padding:12px 14px}
+.live-type-badge small{color:var(--muted);letter-spacing:1.4px;font-size:10px;font-weight:800}
+.live-type-badge strong{color:#fff;margin-top:4px;font:800 22px Manrope;display:block}
+.live-type-badge.on{border-color:var(--cyan);background:#102820}
+.live-type-badge.on strong{color:var(--cyan)}
 .live-editor{border:1px solid var(--line);background:#0e161f;border-radius:18px 18px 0 0;width:100%;max-height:88vh;padding:16px 16px 28px;overflow:auto}
 .live-editor-lead{color:var(--muted);margin:0 0 8px;font-size:13px;line-height:1.45}
 .live-stat-grid{grid-template-columns:repeat(2,1fr);gap:10px;margin:16px 0;display:grid}
