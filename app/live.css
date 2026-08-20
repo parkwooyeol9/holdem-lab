@@ -3,8 +3,8 @@
 .live-top h1{margin:8px 0 6px;font:800 clamp(26px,5vw,36px)/1.1 Manrope}
 .live-top p{color:var(--muted);margin:0;font-size:14px;line-height:1.5}
 .live-top .ghost{flex:none;align-items:center}
-.live-felt-card,.live-cards,.live-actions,.live-rec{border:1px solid var(--line);background:var(--panel);border-radius:16px;margin-bottom:12px;padding:16px}
-.live-felt-card>small,.live-cards small,.live-actions>small,.live-rec small,.live-stat-grid small{color:var(--cyan);letter-spacing:1.4px;font-size:10px;font-weight:800}
+.live-felt-card,.live-cards,.live-actions,.live-rec,.live-hud-panel{border:1px solid var(--line);background:var(--panel);border-radius:16px;margin-bottom:12px;padding:16px}
+.live-felt-card>small,.live-cards small,.live-actions>small,.live-rec small,.live-hud-panel>small,.live-stat-grid small{color:var(--cyan);letter-spacing:1.4px;font-size:10px;font-weight:800}
 .live-felt-hint{color:var(--muted);margin:10px 0 0;font-size:12px}
 .live-felt{background:radial-gradient(circle,#195249,#0b2a27 62%);border:8px solid #253443;border-radius:40%;height:320px;margin:16px 8px 0;position:relative}
 .live-felt-core{color:#8bb9af;letter-spacing:2px;text-transform:uppercase;font:800 11px Manrope;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
@@ -15,6 +15,8 @@
 .live-seat em{color:#061310;background:var(--gold);border-radius:999px;margin-top:6px;padding:2px 7px;font:800 9px DM Sans;font-style:normal;display:inline-block}
 .live-seat.hero{cursor:default;border-color:var(--cyan);box-shadow:0 0 0 2px #4ee7c044}
 .live-seat.tagged{border-color:#4ee7c088}
+.live-seat.selected{border-color:var(--gold);box-shadow:0 0 0 2px #f3bd5b55}
+.live-dealer{color:#061310;background:var(--gold);border-radius:50%;place-items:center;width:18px;height:18px;font:800 9px Manrope;font-style:normal;display:grid;position:absolute;top:-8px;left:-8px}
 .live-seat-0{top:88%;left:50%}
 .live-seat-1{top:68%;left:12%}
 .live-seat-2{top:22%;left:18%}

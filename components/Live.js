@@ -4,11 +4,25 @@ import { useEffect, useMemo, useState } from "react";
 import { RotateCcw, X } from "lucide-react";
 import Card from "./Card";
 import { RANK_ORDER, SUIT_LIST, compactCards, holeLabel } from "@/lib/indicators";
-import { POS_6, STAT_FIELDS, classify, emptyStats, emptyTable, hasRead } from "@/lib/villains";
+import {
+  HERO_SEAT,
+  POS_6,
+  SEAT_COUNT,
+  STAT_FIELDS,
+  advanceButton,
+  buttonForHeroPosition,
+  classify,
+  emptySeats,
+  emptyStats,
+  hasRead,
+  heroPosition,
+  positionOf,
+  seatOfPosition
+} from "@/lib/villains";
 import { legalActions, recommend } from "@/lib/preflop";
 
-const SEATS_KEY = "hl-live-seats";
-const HAND_KEY = "hl-live-hand";
+const SEATS_KEY = "hl-live-seats-v2";
+const HAND_KEY = "hl-live-hand-v2";
 
 const ACTION_LABEL = {
   fold: "Fold",
@@ -20,28 +34,20 @@ const ACTION_LABEL = {
   check: "Check"
 };
 
-function emptyHand(heroPos = "BTN") {
+function emptyHand(buttonSeat = 0) {
   return {
-    heroPos,
+    buttonSeat,
     hole: [null, null],
     actions: Object.fromEntries(POS_6.map((pos) => [pos, ""]))
   };
 }
 
 function loadSeats() {
-  const base = emptyTable();
+  const base = emptySeats();
   try {
     const parsed = JSON.parse(localStorage.getItem(SEATS_KEY) || "null");
-    if (!parsed) return base;
-    for (const pos of POS_6) {
-      base[pos] = {
-        ...base[pos],
-        ...parsed[pos],
-        pos,
-        stats: { ...base[pos].stats, ...parsed[pos]?.stats }
-      };
-    }
-    return base;
+    if (!Array.isArray(parsed) || parsed.length !== SEAT_COUNT) return base;
+    return base.map((seat, i) => ({ ...seat, stats: { ...seat.stats, ...parsed[i]?.stats } }));
   } catch {
     return base;
   }
@@ -51,7 +57,12 @@ function loadHand() {
   try {
     const parsed = JSON.parse(sessionStorage.getItem(HAND_KEY) || "null");
     if (!parsed) return emptyHand();
-    return { ...emptyHand(parsed.heroPos || "BTN"), ...parsed, hole: [parsed.hole?.[0] || null, parsed.hole?.[1] || null] };
+    const buttonSeat = Number.isInteger(parsed.buttonSeat) ? parsed.buttonSeat % SEAT_COUNT : 0;
+    return {
+      ...emptyHand(buttonSeat),
+      hole: [parsed.hole?.[0] || null, parsed.hole?.[1] || null],
+      actions: { ...emptyHand().actions, ...parsed.actions }
+    };
   } catch {
     return emptyHand();
   }
@@ -74,10 +85,10 @@ function Slot({ card, label, onClick, onClear }) {
 }
 
 export default function Live() {
-  const [seats, setSeats] = useState(emptyTable);
+  const [seats, setSeats] = useState(emptySeats);
   const [hand, setHand] = useState(emptyHand);
   const [picker, setPicker] = useState(null);
-  const [editPos, setEditPos] = useState(null);
+  const [editSeatId, setEditSeatId] = useState(1);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
@@ -100,20 +111,25 @@ export default function Live() {
     } catch {}
   }, [hand, hydrated]);
 
+  const heroPos = heroPosition(hand.buttonSeat);
+  const nextHeroPos = heroPosition(advanceButton(hand.buttonSeat));
   const used = useMemo(() => new Set(compactCards(hand.hole)), [hand.hole]);
-  const rec = useMemo(
-    () => recommend({ hole: hand.hole, heroPos: hand.heroPos, actions: hand.actions, seats }),
-    [hand, seats]
+  const seatsByPos = useMemo(
+    () => Object.fromEntries(POS_6.map((pos) => [pos, seats[seatOfPosition(pos, hand.buttonSeat)]])),
+    [seats, hand.buttonSeat]
   );
-  const heroIdx = POS_6.indexOf(hand.heroPos);
-  const visualOrder = POS_6.map((_, i) => POS_6[(heroIdx + i) % POS_6.length]);
-  const ahead = POS_6.slice(0, heroIdx);
-  const editSeat = editPos ? seats[editPos] : null;
+  const rec = useMemo(
+    () => recommend({ hole: hand.hole, heroPos, actions: hand.actions, seats: seatsByPos }),
+    [hand.hole, hand.actions, heroPos, seatsByPos]
+  );
+  const ahead = POS_6.slice(0, POS_6.indexOf(heroPos));
+  const editSeat = seats[editSeatId] || seats[1];
+  const editPos = positionOf(editSeatId, hand.buttonSeat);
   const pickCode = picker != null ? hand.hole[picker] : null;
 
-  const setHero = (pos) => {
+  const setHeroPos = (pos) => {
     setHand((h) => ({
-      ...emptyHand(pos),
+      ...emptyHand(buttonForHeroPosition(pos)),
       hole: h.hole
     }));
   };
@@ -139,13 +155,13 @@ export default function Live() {
     });
   };
 
-  const patchSeat = (pos, patch) => {
-    setSeats((s) => ({ ...s, [pos]: { ...s[pos], ...patch, stats: { ...s[pos].stats, ...(patch.stats || {}) } } }));
+  const patchSeat = (id, patch) => {
+    setSeats((list) => list.map((seat) => (seat.id === id ? { ...seat, ...patch, stats: { ...seat.stats, ...(patch.stats || {}) } } : seat)));
   };
 
   const nextHand = () => {
     setPicker(null);
-    setHand((h) => emptyHand(h.heroPos));
+    setHand((h) => emptyHand(advanceButton(h.buttonSeat)));
   };
 
   return (
@@ -154,48 +170,87 @@ export default function Live() {
         <div>
           <span className="tag">LIVE · 6-MAX HUD</span>
           <h1>Tag the table. Get a mix.</h1>
-          <p>Enter ten HUD stats per seat. We label the player type and return fold / call / raise frequencies for this hand.</p>
+          <p>테이블 아래 10칸 HUD에 숫자를 넣으세요. Next hand는 딜러 버튼을 다음 자리로 옮기고 카드를 지웁니다.</p>
         </div>
         <button className="ghost" type="button" onClick={nextHand}>
-          <RotateCcw /> Next hand
+          <RotateCcw /> Next hand · {nextHeroPos}
         </button>
       </div>
 
       <section className="live-felt-card">
-        <small>YOU ARE</small>
+        <small>THIS HAND YOU ARE</small>
         <div className="live-chips">
           {POS_6.map((pos) => (
-            <button key={pos} type="button" className={hand.heroPos === pos ? "on" : ""} onClick={() => setHero(pos)}>
+            <button key={pos} type="button" className={heroPos === pos ? "on" : ""} onClick={() => setHeroPos(pos)}>
               {pos}
             </button>
           ))}
         </div>
         <div className="live-felt">
-          {visualOrder.map((pos, visual) => {
-            const read = classify(seats[pos]);
-            const isHero = pos === hand.heroPos;
+          {seats.map((seat) => {
+            const pos = positionOf(seat.id, hand.buttonSeat);
+            const isHero = seat.id === HERO_SEAT;
+            const isBtn = pos === "BTN";
             const acted = hand.actions[pos];
+            const read = classify(seat);
             return (
               <button
-                key={pos}
+                key={seat.id}
                 type="button"
-                className={`live-seat live-seat-${visual}${isHero ? " hero" : ""}${hasRead(seats[pos]) ? " tagged" : ""}`}
+                className={`live-seat live-seat-${seat.id}${isHero ? " hero" : ""}${hasRead(seat) ? " tagged" : ""}${editSeatId === seat.id && !isHero ? " selected" : ""}`}
                 onClick={() => {
-                  if (!isHero) setEditPos(pos);
+                  if (!isHero) setEditSeatId(seat.id);
                 }}
               >
+                {isBtn ? <i className="live-dealer">D</i> : null}
                 <b>
                   {pos}
                   {isHero ? " · YOU" : ""}
                 </b>
-                <span>{isHero ? holeLabel(hand.hole) || "Your cards" : read.label}</span>
+                <span>{isHero ? holeLabel(hand.hole) || "Your cards" : hasRead(seat) ? read.label : "Tap · 10 HUD stats"}</span>
                 {acted ? <em>{ACTION_LABEL[acted]}</em> : null}
               </button>
             );
           })}
-          <div className="live-felt-core">6-max</div>
+          <div className="live-felt-core">D = dealer · Next hand moves it</div>
         </div>
-        <p className="live-felt-hint">Tap an opponent and enter HUD stats. The seat shows their type (LAG, Fish, TAG…).</p>
+        <p className="live-felt-hint">
+          You are {heroPos}. Next hand you become {nextHeroPos}. HUD stays on the same people.
+        </p>
+      </section>
+
+      <section className="live-hud-panel">
+        <small>10 HUD STATS</small>
+        <div className="live-picker-head">
+          <b>
+            {editPos}
+            {hasRead(editSeat) ? ` · ${classify(editSeat).label}` : " · tap a seat"}
+          </b>
+          <button type="button" className="ghost" onClick={() => patchSeat(editSeatId, { stats: emptyStats() })}>
+            Clear
+          </button>
+        </div>
+        <div className={"live-type-badge" + (hasRead(editSeat) ? " on" : "")}>
+          <small>PLAYER TYPE</small>
+          <strong>{classify(editSeat).label}</strong>
+        </div>
+        <p className="live-editor-lead">자리를 탭한 뒤 VPIP부터 W$SD까지 10개를 입력하세요. 유형은 입력하는 즉시 바뀝니다.</p>
+        <div className="live-stat-grid">
+          {STAT_FIELDS.map((f) => (
+            <label key={f.key}>
+              <small>{f.label}</small>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                inputMode="decimal"
+                placeholder="%"
+                value={editSeat?.stats?.[f.key] ?? ""}
+                onChange={(e) => patchSeat(editSeatId, { stats: { [f.key]: e.target.value } })}
+              />
+            </label>
+          ))}
+        </div>
       </section>
 
       <section className="live-cards">
@@ -264,49 +319,6 @@ export default function Live() {
         ) : null}
         <p>{rec.reason}</p>
       </section>
-
-      {editPos && editSeat && (
-        <div className="live-picker-scrim" onClick={() => setEditPos(null)}>
-          <div className="live-editor" onClick={(e) => e.stopPropagation()}>
-            <div className="live-picker-head">
-              <b>{editPos} HUD</b>
-              <button
-                type="button"
-                className="ghost"
-                onClick={() => {
-                  patchSeat(editPos, { stats: emptyStats() });
-                }}
-              >
-                Clear
-              </button>
-            </div>
-            <div className={"live-type-badge" + (hasRead(editSeat) ? " on" : "")}>
-              <small>PLAYER TYPE</small>
-              <strong>{classify(editSeat).label}</strong>
-            </div>
-            <p className="live-editor-lead">Enter frequencies in percent. Type updates as you type.</p>
-            <div className="live-stat-grid">
-              {STAT_FIELDS.map((f) => (
-                <label key={f.key}>
-                  <small>{f.label}</small>
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    inputMode="decimal"
-                    placeholder="%"
-                    value={editSeat.stats[f.key] ?? ""}
-                    onChange={(e) => patchSeat(editPos, { stats: { [f.key]: e.target.value } })}
-                  />
-                </label>
-              ))}
-            </div>
-            <button className="cta" type="button" onClick={() => setEditPos(null)}>
-              Done
-            </button>
-          </div>
-        </div>
-      )}
 
       {picker != null && (
         <div className="live-picker-scrim" onClick={() => setPicker(null)}>
