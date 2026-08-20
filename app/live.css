@@ -48,8 +48,12 @@
 .live-slot-clear{color:#9eb0bb;cursor:pointer;background:#15232d;border:1px solid var(--line);border-radius:50%;place-items:center;width:22px;height:22px;padding:0;display:grid;position:absolute;top:-6px;right:-6px}
 .live-slot-clear svg{width:12px}
 .live-actions p{color:var(--muted);margin:10px 0 0;font-size:13px}
-.live-action-row{border-top:1px solid var(--line);align-items:center;gap:10px;margin-top:10px;padding-top:10px;display:grid;grid-template-columns:52px 1fr}
+.live-action-row{border-top:1px solid var(--line);align-items:center;gap:10px;margin-top:10px;padding-top:10px;display:grid;grid-template-columns:92px 1fr}
 .live-action-row>b{color:#d5e0e6;font:800 12px Manrope}
+.live-action-row.you{background:#10282066;border-radius:10px;padding:8px 10px}
+.live-action-row.folded{opacity:.4}
+.live-you-wait{color:var(--cyan);font-size:12px;font-weight:700}
+.live-actions-post{border-color:#4ee7c066}
 .live-rec h2{margin:8px 0 4px;font:800 clamp(22px,4.5vw,32px)/1.15 Manrope}
 .live-rec b{color:var(--cyan);font-size:14px}
 .live-rec p{color:#c5d3da;margin:8px 0 0;font-size:14px;line-height:1.5}
