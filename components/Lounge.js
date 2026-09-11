@@ -5,10 +5,16 @@ import { Bot, MessageCircle, Sparkles } from "lucide-react";
 import { ACTION_SECONDS, BIG_BLIND, legalActions, SEAT_COUNT, SMALL_BLIND } from "@/lib/poker";
 import { createRoom, DEFAULT_TABLE, makePlayer } from "@/lib/lounge";
 import { CHAT_EMOJIS } from "@/lib/characters";
+import { useT } from "@/lib/i18n";
 import Card from "./Card";
 
 const QUICK = ["lmao", "wait wait", "I'm so bad", "deal me in", "brb", "who brought snacks", "we are so back", "just vibing"];
-const STREET = { waiting: "Waiting", preflop: "Preflop", flop: "Flop", turn: "Turn", river: "River", showdown: "Showdown" };
+
+function streetLabel(t, street) {
+  if (street === "preflop" || street === "flop" || street === "turn" || street === "river") return t(`modules.${street}`);
+  if (street === "showdown") return t("lounge.showdown");
+  return t("lounge.waiting");
+}
 
 function Avatar({ face, nick, hue, big }) {
   return (
@@ -32,6 +38,7 @@ function lastSpeech(chat, nick, now) {
 }
 
 export default function Lounge({ nickname, face, onNeedNick }) {
+  const { t } = useT();
   const [table, setTable] = useState(null);
   const [raiseTo, setRaiseTo] = useState("");
   const [draft, setDraft] = useState("");
@@ -69,12 +76,12 @@ export default function Lounge({ nickname, face, onNeedNick }) {
     return (
       <div className="page lounge-page party">
         <div className="page-title">
-          <span className="tag">PARTY TABLE</span>
-          <h1>Come hang. Real Hold’em still deals.</h1>
-          <p>Pick a character, sit with friends, and talk. Chips are play money. The hand is real Texas Hold’em.</p>
+          <span className="tag">{t("lounge.tag")}</span>
+          <h1>{t("lounge.emptyTitle")}</h1>
+          <p>{t("lounge.emptyBody")}</p>
         </div>
         <button className="cta" onClick={onNeedNick}>
-          Pick your character
+          {t("lounge.pick")}
         </button>
       </div>
     );
@@ -95,24 +102,28 @@ export default function Lounge({ nickname, face, onNeedNick }) {
     <div className="page lounge-page party">
       <div className="lounge-top">
         <div>
-          <span className="tag">PARTY TABLE · PLAY CHIPS · {SMALL_BLIND}/{BIG_BLIND}</span>
-          <h1>Sit down. Talk. Keep playing real Hold’em.</h1>
+          <span className="tag">{t("lounge.tableTag", { sb: SMALL_BLIND, bb: BIG_BLIND })}</span>
+          <h1>{t("lounge.title")}</h1>
           <p>
-            {hanging} at the table · play money · {table?.handNo ? `hand #${table.handNo}` : "no hand yet"} · {STREET[table?.street] || "Waiting"}
-            {toActNick ? ` · ${toActNick} to act` : ""}
+            {t("lounge.meta", {
+              n: hanging,
+              hand: table?.handNo ? t("lounge.handNo", { n: table.handNo }) : t("lounge.noHand"),
+              street: streetLabel(t, table?.street)
+            })}
+            {toActNick ? ` · ${t("lounge.toAct", { nick: toActNick })}` : ""}
             {table?.street && table.street !== "waiting" ? ` · ${remaining}s` : ""}
           </p>
         </div>
         <div className="lounge-top-actions">
           <button className="ghost" onClick={() => roomRef.current?.addBot()} disabled={(table?.seats.filter(Boolean).length || 0) >= SEAT_COUNT}>
-            <Bot /> Invite a party bot
+            <Bot /> {t("lounge.invite")}
           </button>
           <button className="ghost" onClick={() => roomRef.current?.removeBot()} disabled={!table?.seats.some((s) => s?.bot)}>
-            Uninvite bot
+            {t("lounge.uninvite")}
           </button>
           {seated && (
             <button className="ghost" onClick={() => roomRef.current?.leave()}>
-              Leave seat
+              {t("lounge.leave")}
             </button>
           )}
         </div>
@@ -133,11 +144,11 @@ export default function Lounge({ nickname, face, onNeedNick }) {
                     <div className="empty-seat-col">
                       {!seated && (
                         <button className="empty-seat" onClick={() => roomRef.current?.sit(seatIdx)}>
-                          Sit with us
+                          {t("lounge.sit")}
                         </button>
                       )}
                       <button className="empty-seat bot-seat" onClick={() => roomRef.current?.addBot(seatIdx)}>
-                        + party bot
+                        {t("lounge.addBot")}
                       </button>
                     </div>
                   ) : (
@@ -193,8 +204,8 @@ export default function Lounge({ nickname, face, onNeedNick }) {
             <div className="felt-center">
               {table?.street && table.street !== "waiting" && (
                 <div className="street-pip">
-                  {STREET[table.street]} · {SMALL_BLIND}/{BIG_BLIND}
-                  {table.currentBet ? ` · bet ${table.currentBet}` : ""}
+                  {streetLabel(t, table.street)} · {SMALL_BLIND}/{BIG_BLIND}
+                  {table.currentBet ? ` · ${t("lounge.bet", { n: table.currentBet })}` : ""}
                 </div>
               )}
               <div className="board">
@@ -203,7 +214,7 @@ export default function Lounge({ nickname, face, onNeedNick }) {
                 ))}
               </div>
               <div className="pot">
-                POT <b>{table?.pot || 0}</b>
+                {t("lounge.pot")} <b>{table?.pot || 0}</b>
               </div>
               {table?.street === "showdown" && table?.winners && (
                 <div className="table-burst win social-burst">
@@ -213,7 +224,7 @@ export default function Lounge({ nickname, face, onNeedNick }) {
               {table?.street === "waiting" && (
                 <div className="felt-wait">
                   <Sparkles />
-                  <span>{seated ? "Need two stacks — invite a friend or drop in a bot" : "Grab a seat. Hold’em starts at two players."}</span>
+                  <span>{seated ? t("lounge.waitSeated") : t("lounge.waitEmpty")}</span>
                 </div>
               )}
             </div>
@@ -258,18 +269,18 @@ export default function Lounge({ nickname, face, onNeedNick }) {
                     </button>
                   </>
                 )}
-                <small>auto-acts in {remaining}s if you keep chatting</small>
+                <small>{t("lounge.auto", { n: remaining })}</small>
               </>
             ) : seated ? (
               table?.street === "showdown" ? (
                 <button className="cta" onClick={() => roomRef.current?.dealNext()}>
-                  Next hand
+                  {t("lounge.next")}
                 </button>
               ) : (
-                <p>{toActNick ? `${toActNick} to act · ${remaining}s` : "Hand in progress — next street deals automatically."}</p>
+                <p>{toActNick ? `${t("lounge.toAct", { nick: toActNick })} · ${remaining}s` : t("lounge.inHand")}</p>
               )
             ) : (
-              <p>Sit anywhere. Real Hold’em starts as soon as two seats are filled.</p>
+              <p>{t("lounge.sitAnywhere")}</p>
             )}
           </div>
         </div>
@@ -278,8 +289,8 @@ export default function Lounge({ nickname, face, onNeedNick }) {
           <div className="form-head">
             <MessageCircle />
             <div>
-              <b>Live table chat</b>
-              <small>{hanging} in the room · chat while the hand runs</small>
+              <b>{t("lounge.chat")}</b>
+              <small>{t("lounge.chatMeta", { n: hanging })}</small>
             </div>
           </div>
           <div className="chat-log" ref={chatRef}>
@@ -310,9 +321,9 @@ export default function Lounge({ nickname, face, onNeedNick }) {
               setDraft("");
             }}
           >
-            <input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Say it to the table…" maxLength={140} />
+            <input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={t("lounge.placeholder")} maxLength={140} />
             <button className="cta" type="submit">
-              Send
+              {t("lounge.send")}
             </button>
           </form>
         </aside>

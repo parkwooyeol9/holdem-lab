@@ -2,6 +2,7 @@ import "./globals.css";
 import "./lounge.css";
 import "./live.css";
 import "./practice.css";
+import Providers from "@/components/Providers";
 
 export const metadata = {
   title: "Holdem Lab — Learn GTO by Playing",
@@ -10,8 +11,10 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="ko">
+      <body>
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

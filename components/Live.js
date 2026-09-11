@@ -22,6 +22,7 @@ import {
 } from "@/lib/villains";
 import { legalActions, recommend } from "@/lib/preflop";
 import { FLOP_ACTION_LABEL, alivePositions, flopStreet, legalFlopActions, recommendFlop } from "@/lib/flop";
+import { useT } from "@/lib/i18n";
 
 const SEATS_KEY = "hl-live-seats-v2";
 const HAND_KEY = "hl-live-hand-v3";
@@ -95,6 +96,7 @@ function Slot({ card, label, onClick, onClear, compact }) {
 }
 
 export default function Live() {
+  const { t } = useT();
   const [seats, setSeats] = useState(emptySeats);
   const [hand, setHand] = useState(emptyHand);
   const [picker, setPicker] = useState(null);
@@ -219,22 +221,22 @@ export default function Live() {
     <div className="page live-page">
       <div className="live-top">
         <div>
-          <span className="tag">LIVE · 6-MAX HUD</span>
-          <h1>Tag the table. Get a mix.</h1>
-          <p>홀카드는 테이블 위, 플랍은 펠트 한가운데. 프리플랍 믹스는 PokerBench GTO 라벨을 차트 프라이어 쪽으로 수축한 값이고, HUD는 인구 평균 대비로 조금씩만 밀어 줍니다.</p>
+          <span className="tag">{t("live.tag")}</span>
+          <h1>{t("live.title")}</h1>
+          <p>{t("live.blurb")}</p>
         </div>
         <div className="live-top-actions">
           <button className={"ghost" + (hand.street === "flop" ? " on" : "")} type="button" onClick={goFlop}>
-            <Layers /> Postflop
+            <Layers /> {t("live.postflop")}
           </button>
           <button className="ghost" type="button" onClick={nextHand}>
-            <RotateCcw /> Next hand · {nextHeroPos}
+            <RotateCcw /> {t("live.next", { pos: nextHeroPos })}
           </button>
         </div>
       </div>
 
       <section className="live-felt-card">
-        <small>THIS HAND YOU ARE</small>
+        <small>{t("live.youAre")}</small>
         <div className="live-chips">
           {POS_6.map((pos) => (
             <button key={pos} type="button" className={heroPos === pos ? "on" : ""} onClick={() => setHeroPos(pos)}>
@@ -243,14 +245,14 @@ export default function Live() {
           ))}
         </div>
         <div className="live-hole-row">
-          <small>YOUR HAND</small>
+          <small>{t("live.yourHand")}</small>
           <div className="live-slots compact">
             {hand.hole.map((c, i) => (
               <Slot
                 key={`h${i}`}
                 card={c}
                 compact
-                label={i === 0 ? "Card 1" : "Card 2"}
+                label={i === 0 ? t("handlab.card1") : t("handlab.card2")}
                 onClick={() => setPicker({ pile: "hole", index: i })}
                 onClear={() => setCard("hole", i, null)}
               />
@@ -276,9 +278,9 @@ export default function Live() {
                 {isBtn ? <i className="live-dealer">D</i> : null}
                 <b>
                   {pos}
-                  {isHero ? " · YOU" : ""}
+                  {isHero ? ` · ${t("live.you")}` : ""}
                 </b>
-                <span>{isHero ? holeLabel(hand.hole) || "Your cards" : hasRead(seat) ? read.label : "Tap · 10 HUD stats"}</span>
+                <span>{isHero ? holeLabel(hand.hole) || t("live.yourCards") : hasRead(seat) ? read.label : t("live.tapHud")}</span>
                 {acted ? <em>{ACTION_LABEL[acted]}</em> : null}
               </button>
             );
@@ -297,21 +299,21 @@ export default function Live() {
               ))
             ) : (
               <button type="button" className="live-board-deal" onClick={goFlop}>
-                플랍 깔기
+                {t("live.flopDeal")}
               </button>
             )}
           </div>
         </div>
         <p className="live-felt-hint">
           {hand.street === "flop"
-            ? "테이블 중앙에 플랍 3장을 깔고, 아래 액션을 넣은 뒤 바로 추천을 보세요."
-            : `지금 ${heroPos}. Next hand 당신은 ${nextHeroPos}. 플랍은 테이블 가운데를 누르세요.`}
+            ? t("live.flopHint")
+            : t("live.preHint", { hero: heroPos, next: nextHeroPos })}
         </p>
       </section>
 
       <section className="live-actions">
-        <small>PREFLOP ACTION · UTG FIRST</small>
-        <p>UTG → HJ → CO → BTN → SB → BB. 6명 모두 넣습니다. 당신 자리는 아래 추천입니다.</p>
+        <small>{t("live.preflop")}</small>
+        <p>{t("live.preflopHelp")}</p>
         {PREFLOP_ORDER.map((pos) => {
           const you = pos === heroPos;
           const options = legalActions(hand.actions, pos);
@@ -319,10 +321,10 @@ export default function Live() {
             <div className={"live-action-row" + (you ? " you" : "")} key={`pre-${pos}`}>
               <b>
                 {pos}
-                {you ? " · YOU" : ""}
+                {you ? ` · ${t("live.you")}` : ""}
               </b>
               {you ? (
-                <span className="live-you-wait">아래 추천</span>
+                <span className="live-you-wait">{t("live.recYou")}</span>
               ) : (
                 <div className="live-chips compact">
                   {options.map((act) => (
@@ -344,8 +346,8 @@ export default function Live() {
 
       {hand.street === "flop" ? (
         <section className="live-actions live-actions-post">
-          <small>POSTFLOP ACTION · UTG FIRST</small>
-          <p>플랍도 UTG부터 6명입니다. 접은 자리는 Folded. 액션을 바꾸면 아래 추천이 바로 갱신됩니다.</p>
+          <small>{t("live.postflopAct")}</small>
+          <p>{t("live.postflopHelp")}</p>
           {flopRows.map(({ pos, folded, you }) => {
             const options = legalFlopActions(hand.flopActions, pos, flopAlive);
             const stored = hand.flopActions?.[pos];
@@ -354,12 +356,12 @@ export default function Live() {
               <div className={"live-action-row" + (you ? " you" : "") + (folded ? " folded" : "")} key={`post-${pos}`}>
                 <b>
                   {pos}
-                  {you ? " · YOU" : ""}
+                  {you ? ` · ${t("live.you")}` : ""}
                 </b>
                 {you ? (
-                  <span className="live-you-wait">아래 플랍 추천</span>
+                  <span className="live-you-wait">{t("live.flopRecYou")}</span>
                 ) : folded ? (
-                  <span className="live-you-wait">Folded</span>
+                  <span className="live-you-wait">{t("live.folded")}</span>
                 ) : (
                   <div className="live-chips compact">
                     {options.map((act) => (
@@ -383,12 +385,12 @@ export default function Live() {
       <section className={"live-rec" + (rec.action === "Fold" ? " fold" : rec.mix.length ? " go" : "")}>
         <small>
           {hand.street === "flop"
-            ? "FLOP RECOMMENDATION"
+            ? t("live.flopRec")
             : rec.source === "pokerbench"
-              ? `POKERBENCH n=${rec.benchN}${rec.benchTable ? ` · ${rec.benchTable}` : ""} · ${Math.round((rec.solverWeight || 0) * 100)}% SOLVER WEIGHT`
+              ? t("live.bench", { n: rec.benchN, table: rec.benchTable ? ` · ${rec.benchTable}` : "", pct: Math.round((rec.solverWeight || 0) * 100) })
               : rec.mix.length
-                ? "CHART PRIOR · 6-MAX 100BB"
-                : "RECOMMENDATION"}
+                ? t("live.chartPrior")
+                : t("live.rec")}
         </small>
         <h2>{rec.headline}</h2>
         <b>{rec.detail}</b>
@@ -409,10 +411,10 @@ export default function Live() {
         ) : null}
         {rec.equity && hand.street !== "flop" ? (
           <div className="live-equity">
-            <span>Equity vs {rec.equity.vs}</span>
+            <span>{t("live.equityVs", { vs: rec.equity.vs })}</span>
             <b>{rec.equity.pct}%</b>
             <small>
-              {rec.equity.combos ? `${rec.equity.combos} combos` : "random remainder"} · {rec.equity.samples} samples
+              {rec.equity.combos ? t("live.combos", { n: rec.equity.combos }) : t("live.randomRemainder")} · {t("live.samples", { n: rec.equity.samples })}
             </small>
           </div>
         ) : null}
@@ -420,22 +422,22 @@ export default function Live() {
       </section>
 
       <section className="live-hud-panel">
-        <small>10 HUD STATS</small>
+        <small>{t("live.hud")}</small>
         <div className="live-picker-head">
           <b>
             {editPos}
-            {hasRead(editSeat) ? ` · ${editRead.label}` : " · tap a seat"}
+            {hasRead(editSeat) ? ` · ${editRead.label}` : ` · ${t("live.tap")}`}
           </b>
           <button type="button" className="ghost" onClick={() => patchSeat(editSeatId, { stats: emptyStats() })}>
-            Clear
+            {t("live.clear")}
           </button>
         </div>
         <div className={"live-type-badge" + (hasRead(editSeat) ? " on" : "")}>
-          <small>PLAYER TYPE</small>
+          <small>{t("live.type")}</small>
           <strong>{editRead.label}</strong>
           <p className="live-exploit">{editRead.exploit}</p>
         </div>
-        <p className="live-editor-lead">자리를 탭한 뒤 VPIP부터 W$SD까지 10개를 입력하세요. 유형과 공략 한 줄은 입력하는 즉시 바뀝니다.</p>
+        <p className="live-editor-lead">{t("live.hudLead")}</p>
         <div className="live-stat-grid">
           {STAT_FIELDS.map((f) => (
             <label key={f.key}>
@@ -455,16 +457,16 @@ export default function Live() {
       </section>
 
       <section className="live-guide">
-        <small>HUD GUIDE</small>
-        <h2>10개 지표로 유형을 나누는 법</h2>
-        <p>숫자를 넣을수록 라벨이 정확해집니다. 한두 칸만 넣으면 TAG/LAG로 기울 수 있습니다.</p>
+        <small>{t("live.guide")}</small>
+        <h2>{t("live.guideTitle")}</h2>
+        <p>{t("live.guideBody")}</p>
         <div className="live-guide-wrap">
           <table>
             <thead>
               <tr>
-                <th>지표</th>
-                <th>의미</th>
-                <th>분류</th>
+                <th>{t("live.colStat")}</th>
+                <th>{t("live.colWhat")}</th>
+                <th>{t("live.colRule")}</th>
               </tr>
             </thead>
             <tbody>
@@ -484,9 +486,9 @@ export default function Live() {
         <div className="live-picker-scrim" onClick={() => setPicker(null)}>
           <div className="live-picker" onClick={(e) => e.stopPropagation()}>
             <div className="live-picker-head">
-              <b>{picker.pile === "flop" ? "Pick a flop card" : "Pick a card"}</b>
+              <b>{picker.pile === "flop" ? t("live.pickFlop") : t("live.pickCard")}</b>
               <button type="button" className="ghost" onClick={() => setCard(picker.pile, picker.index, null)}>
-                Clear
+                {t("live.clear")}
               </button>
             </div>
             <div className="live-grid">

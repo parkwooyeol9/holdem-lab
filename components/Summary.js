@@ -2,27 +2,24 @@
 
 import { ChevronRight, RotateCcw, Trophy } from "lucide-react";
 import { pct, safeSpot } from "@/lib/spots";
-
-function gradeText(grade) {
-  if (grade === "optimal") return "Solver action";
-  if (grade === "close") return "Close sizing";
-  return "Missed";
-}
+import { useT } from "@/lib/i18n";
 
 export default function Summary({ results, mode, start, reviewQueue, goHome }) {
+  const { t } = useT();
   const good = results.filter((r) => r.ok).length;
   const xp = results.reduce((s, r) => s + (r.points || 0), 0);
   const avg = results.length ? Math.round(results.reduce((s, r) => s + (r.seconds || 0), 0) / results.length) : 0;
   const exact = results.filter((r) => r.grade === "optimal").length;
   const streetScores = {};
   for (const r of results) {
-    const street = safeSpot(r.hand).level;
+    const street = safeSpot(r.hand).street;
     if (!streetScores[street]) streetScores[street] = { ok: 0, n: 0 };
     streetScores[street].n += 1;
     if (r.ok) streetScores[street].ok += 1;
   }
-  const strongest =
-    Object.entries(streetScores).sort((a, b) => b[1].ok / b[1].n - a[1].ok / a[1].n)[0]?.[0] || "—";
+  const strongestId = Object.entries(streetScores).sort((a, b) => b[1].ok / b[1].n - a[1].ok / a[1].n)[0]?.[0];
+  const strongest = strongestId ? t(`modules.${strongestId}`) : "—";
+  const headline = good >= 4 ? t("summary.sharp") : good >= 2 ? t("summary.ok") : t("summary.miss");
 
   return (
     <div className="page summary-page">
@@ -30,45 +27,43 @@ export default function Summary({ results, mode, start, reviewQueue, goHome }) {
         <div className="summary-trophy">
           <Trophy />
         </div>
-        <span className="tag">{mode.toUpperCase()} SESSION COMPLETE</span>
-        <h1>{good >= 4 ? "Sharp decisions." : good >= 2 ? "Good foundation." : "Useful mistakes."}</h1>
-        <p>Every result has been added to your learning profile and review queue.</p>
+        <span className="tag">{t("summary.tag", { mode: t(`modes.${mode}`) })}</span>
+        <h1>{headline}</h1>
+        <p>{t("summary.added")}</p>
         <div className="session-score">
           <b>{xp}</b>
-          <small>SESSION XP</small>
+          <small>{t("summary.xp")}</small>
         </div>
       </div>
       <div className="summary-stats">
         <article>
-          <small>QUALITY SCORE</small>
+          <small>{t("summary.quality")}</small>
           <b>{pct(good, results.length)}%</b>
-          <span>
-            {good} of {results.length} solver matches
-          </span>
+          <span>{t("summary.matches", { good, total: results.length })}</span>
         </article>
         <article>
-          <small>AVERAGE TIME</small>
+          <small>{t("summary.avg")}</small>
           <b>{avg}s</b>
-          <span>per decision</span>
+          <span>{t("summary.per")}</span>
         </article>
         <article>
-          <small>EXACT MATCHES</small>
+          <small>{t("summary.exact")}</small>
           <b>{exact}</b>
-          <span>identical to the PokerBench label</span>
+          <span>{t("summary.exactMeta")}</span>
         </article>
         <article>
-          <small>STRONGEST AREA</small>
+          <small>{t("summary.strong")}</small>
           <b className="text-stat">{strongest}</b>
-          <span>best street this session</span>
+          <span>{t("summary.strongMeta")}</span>
         </article>
       </div>
       <div className="summary-breakdown">
         <div className="summary-head">
           <div>
-            <small>HAND-BY-HAND</small>
-            <h2>Your five-decision replay</h2>
+            <small>{t("summary.replay")}</small>
+            <h2>{t("summary.five")}</h2>
           </div>
-          <span>Optimal · Close · Review</span>
+          <span>{t("summary.legend")}</span>
         </div>
         {results.map((r, i) => {
           const spot = safeSpot(r.hand);
@@ -79,11 +74,11 @@ export default function Summary({ results, mode, start, reviewQueue, goHome }) {
               <div>
                 <b>{spot.spot}</b>
                 <small>
-                  {spot.cards.join(" ")} · chose {r.choice}
+                  {spot.cards.join(" ")} · {t("summary.chose", { choice: r.choice })}
                 </small>
               </div>
-              <span>{gradeText(grade)}</span>
-              <span>solver {spot.a}</span>
+              <span>{t(`grades.${grade}`)}</span>
+              <span>{t("summary.solver", { action: spot.a })}</span>
               <b>+{r.points || 0} XP</b>
             </div>
           );
@@ -91,13 +86,13 @@ export default function Summary({ results, mode, start, reviewQueue, goHome }) {
       </div>
       <div className="summary-actions">
         <button className="ghost" onClick={goHome}>
-          Back home
+          {t("summary.home")}
         </button>
         <button className="ghost" disabled={!reviewQueue.length} onClick={() => start("all", "review", reviewQueue)}>
-          <RotateCcw /> Review weak spots
+          <RotateCcw /> {t("summary.review")}
         </button>
         <button className="cta" onClick={() => start("all", mode)}>
-          Play another session <ChevronRight />
+          {t("summary.again")} <ChevronRight />
         </button>
       </div>
     </div>

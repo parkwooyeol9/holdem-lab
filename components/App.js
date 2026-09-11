@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   BrainCircuit,
   ChartNoAxesColumnIncreasing,
@@ -19,6 +20,8 @@ import {
 } from "lucide-react";
 import { SPOTS, gradeChoice, indicesFor, sampleIndices, safeSpot } from "@/lib/spots";
 import { FACES } from "@/lib/characters";
+import { pageFromPath, pathFromPage } from "@/lib/routes";
+import { useT } from "@/lib/i18n";
 import Home from "./Home";
 import Learn from "./Learn";
 import Practice from "./Practice";
@@ -29,22 +32,27 @@ import Lounge from "./Lounge";
 import Live from "./Live";
 
 const NAV = [
-  ["lounge", Users, "Lounge"],
-  ["home", House, "Home"],
-  ["learn", GraduationCap, "Learn"],
-  ["practice", BrainCircuit, "Practice"],
-  ["handlab", Microscope, "Hand Lab"],
-  ["live", Gauge, "Live"],
-  ["progress", ChartNoAxesColumnIncreasing, "Progress"]
+  ["home", House],
+  ["learn", GraduationCap],
+  ["practice", BrainCircuit],
+  ["handlab", Microscope],
+  ["live", Gauge],
+  ["progress", ChartNoAxesColumnIncreasing],
+  ["lounge", Users]
 ];
 
 export default function App() {
-  const [page, setPage] = useState("lounge");
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const page = pageFromPath(pathname);
+  const { t, lang, setLang } = useT();
   const [hand, setHand] = useState(0);
   const [answer, setAnswer] = useState(null);
   const [history, setHistory] = useState([]);
   const [filter, setFilter] = useState("All");
   const [mode, setMode] = useState("learn");
+  const [pool, setPool] = useState("all");
   const [lives, setLives] = useState(3);
   const [sessionStart, setSessionStart] = useState(0);
   const [dealt, setDealt] = useState(0);
@@ -57,6 +65,11 @@ export default function App() {
   const [nickReady, setNickReady] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
   const liveFocus = page === "live";
+
+  const go = (id, query) => {
+    router.push(pathFromPage(id, query));
+    setNavOpen(false);
+  };
 
   useEffect(() => {
     try {
@@ -95,8 +108,9 @@ export default function App() {
   const reviewQueue = [...new Set(history.filter((h) => !h.ok || h.seconds > 15).map((h) => h.hand))];
   const sessionResults = history.slice(sessionStart);
 
-  const start = (poolKey = "all", nextMode = "learn", queue = null) => {
+  const begin = (poolKey = "all", nextMode = "learn", queue = null) => {
     const q = queue?.length ? queue : sampleIndices(indicesFor(poolKey), 5);
+    setPool(poolKey);
     setMode(nextMode);
     setReviewSet(q);
     setReviewCursor(0);
@@ -105,8 +119,20 @@ export default function App() {
     setLives(3);
     setSessionStart(history.length);
     setDealt(0);
-    setPage("practice");
   };
+
+  const start = (poolKey = "all", nextMode = "learn", queue = null) => {
+    begin(poolKey, nextMode, queue);
+    go("practice", { pool: poolKey, mode: nextMode });
+  };
+
+  useLayoutEffect(() => {
+    if (page !== "practice") return;
+    if (reviewSet) return;
+    const nextPool = searchParams.get("pool") || "all";
+    const nextMode = searchParams.get("mode") || "drill";
+    begin(nextPool, nextMode);
+  }, [page, reviewSet, searchParams]);
 
   const saveNick = (value) => {
     const clean = String(value || "").trim().slice(0, 16);
@@ -116,11 +142,13 @@ export default function App() {
     setModal(null);
   };
 
+  const crumb = t(`nav.${page === "practice" ? "practice" : page}`) || page;
+
   return (
     <div className={"app" + (liveFocus ? " live-focus" : "") + (navOpen ? " nav-open" : "")}>
       {liveFocus && navOpen && <div className="live-nav-scrim" onClick={() => setNavOpen(false)} />}
       <aside>
-        <div className="logo">
+        <div className="logo" onClick={() => go("home")}>
           <span>
             <Spade />
           </span>
@@ -129,33 +157,36 @@ export default function App() {
           </b>
         </div>
         <nav>
-          {NAV.map(([id, Icon, label]) => (
+          {NAV.map(([id, Icon]) => (
             <button
               key={id}
               className={page === id ? "on" : ""}
               onClick={() => {
-                setPage(id);
-                setNavOpen(false);
+                if (id === "practice") start(pool || "all", mode === "learn" ? "drill" : mode);
+                else go(id);
               }}
             >
-              <Icon /> {label}
+              <Icon /> {t(`nav.${id}`)}
             </button>
           ))}
         </nav>
         <div className="side-bottom">
           <button onClick={() => setModal("help")}>
-            <CircleQuestionMark /> How it works
+            <CircleQuestionMark /> {t("chrome.how")}
           </button>
-          <button onClick={() => { setNickDraft(nick); setModal("settings"); }}>
-            <Settings /> Settings
+          <button
+            onClick={() => {
+              setNickDraft(nick);
+              setModal("settings");
+            }}
+          >
+            <Settings /> {t("chrome.settings")}
           </button>
           <div className="profile">
             <span className="profile-face">{face}</span>
             <div>
-              <b>{nick || "Player"}</b>
-              <small>
-                Level {Math.floor(xp / 400) + 1} · {xp} XP
-              </small>
+              <b>{nick || t("chrome.player")}</b>
+              <small>{t("chrome.level", { n: Math.floor(xp / 400) + 1 })} · {xp} XP</small>
             </div>
           </div>
         </div>
@@ -166,20 +197,20 @@ export default function App() {
             className="mobile-logo"
             onClick={() => {
               if (liveFocus) setNavOpen((open) => !open);
-              else setPage("lounge");
+              else go("home");
             }}
           >
             <Spade />
           </button>
           <div className="crumb">
-            HOLD’EM LAB <ChevronRight /> <b>{page.toUpperCase()}</b>
+            {t("chrome.crumb")} <ChevronRight /> <b>{crumb}</b>
           </div>
           <div className="top-stats">
             <span>
-              <Flame /> {streak} day streak
+              <Flame /> {t("chrome.streak", { n: streak })}
             </span>
             <span className={combo > 1 ? "combo-live" : ""}>
-              <Zap /> ×{Math.max(1, combo)} combo
+              <Zap /> {t("chrome.combo", { n: Math.max(1, combo) })}
             </span>
             <span>
               <Trophy /> {xp} XP
@@ -187,10 +218,10 @@ export default function App() {
           </div>
         </header>
         {page === "home" && (
-          <Home start={start} answered={answered} correct={correct} reviewQueue={reviewQueue} openLounge={() => setPage("lounge")} />
+          <Home start={start} answered={answered} correct={correct} reviewQueue={reviewQueue} openLounge={() => go("lounge")} />
         )}
         {page === "learn" && <Learn start={start} />}
-        {page === "practice" && (
+        {page === "practice" && reviewSet?.length ? (
           <Practice
             item={item}
             idx={hand}
@@ -225,14 +256,14 @@ export default function App() {
             next={() => {
               if (dealt >= sessionLen || (mode === "challenge" && lives <= 0)) {
                 setAnswer(null);
-                setPage("summary");
+                go("summary");
                 return;
               }
               setAnswer(null);
               if (reviewSet?.length) {
                 const n = reviewCursor + 1;
                 if (n >= reviewSet.length) {
-                  setPage("summary");
+                  go("summary");
                   return;
                 }
                 setReviewCursor(n);
@@ -244,14 +275,14 @@ export default function App() {
             mode={mode}
             lives={lives}
           />
-        )}
+        ) : null}
         {page === "handlab" && <HandLab />}
         {page === "live" && <Live />}
         {page === "progress" && (
           <Progress history={history} correct={correct} filter={filter} setFilter={setFilter} reset={() => { setHistory([]); setAnswer(null); }} />
         )}
         {page === "summary" && (
-          <Summary results={sessionResults} mode={mode} start={start} reviewQueue={reviewQueue} goHome={() => setPage("home")} />
+          <Summary results={sessionResults} mode={mode} start={start} reviewQueue={reviewQueue} goHome={() => go("home")} />
         )}
         {page === "lounge" && (
           <Lounge
@@ -266,32 +297,51 @@ export default function App() {
       </main>
 
       {modal && (
-        <div className="modal-scrim" onClick={() => {
-          if (modal === "nick" && !nick) return;
-          setModal(null);
-        }}>
+        <div
+          className="modal-scrim"
+          onClick={() => {
+            if (modal === "nick" && !nick) return;
+            setModal(null);
+          }}
+        >
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
             {modal === "help" && (
               <>
-                <small className="tag">HOW IT WORKS</small>
-                <h2>A hangout with real Hold’em.</h2>
-                <p>The Lounge is a party table: pick a character, sit down, and talk. Texas Hold’em keeps dealing in the background. Chips are play money only. Learn / Drill use PokerBench solver labels (GTOWizard preflop, WASM-Postflop postflop).</p>
+                <small className="tag">{t("help.tag")}</small>
+                <h2>{t("help.title")}</h2>
+                <p>{t("help.body")}</p>
                 <button className="cta" onClick={() => setModal(null)}>
-                  Got it
+                  {t("help.gotIt")}
                 </button>
               </>
             )}
             {(modal === "settings" || modal === "nick") && (
               <>
-                <small className="tag">{modal === "nick" ? "TABLE NAME" : "SETTINGS"}</small>
-                <h2>{modal === "nick" ? "Who’s showing up?" : "Your party identity"}</h2>
-                <p>Pick an expressive face and a nickname. That’s the whole costume.</p>
+                <small className="tag">{modal === "nick" ? t("settings.nickTag") : t("settings.tag")}</small>
+                <h2>{modal === "nick" ? t("settings.nickTitle") : t("settings.title")}</h2>
+                <p>{modal === "nick" ? t("settings.nickLead") : t("settings.lead")}</p>
+                {modal === "settings" ? (
+                  <div className="lang-toggle">
+                    <small>{t("settings.language")}</small>
+                    <div>
+                      <button type="button" className={lang === "ko" ? "on" : ""} onClick={() => setLang("ko")}>
+                        {t("settings.ko")}
+                      </button>
+                      <button type="button" className={lang === "en" ? "on" : ""} onClick={() => setLang("en")}>
+                        {t("settings.en")}
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
                 <form
                   className="nick-form"
                   onSubmit={(e) => {
                     e.preventDefault();
-                    saveNick(nickDraft);
-                    if (modal === "nick") setPage("lounge");
+                    if (modal === "nick") {
+                      saveNick(nickDraft);
+                      go("lounge");
+                    } else if (nickDraft.trim().length >= 2) saveNick(nickDraft);
+                    else setModal(null);
                   }}
                 >
                   <div className="face-grid">
@@ -308,14 +358,14 @@ export default function App() {
                     ))}
                   </div>
                   <input
-                    autoFocus
+                    autoFocus={modal === "nick"}
                     value={nickDraft}
                     onChange={(e) => setNickDraft(e.target.value)}
-                    placeholder="e.g. riverkid"
+                    placeholder={t("settings.placeholder")}
                     maxLength={16}
                   />
-                  <button className="cta" type="submit" disabled={nickDraft.trim().length < 2}>
-                    Hop in
+                  <button className="cta" type="submit" disabled={modal === "nick" && nickDraft.trim().length < 2}>
+                    {modal === "nick" ? t("settings.hopIn") : t("settings.save")}
                   </button>
                 </form>
               </>

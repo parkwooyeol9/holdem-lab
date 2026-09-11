@@ -4,17 +4,24 @@ import { useState } from "react";
 import { BrainCircuit, Microscope, Plus, Search, Star, Trash2 } from "lucide-react";
 import { FaceCard } from "./Card";
 import { analyzeHand } from "@/lib/handlab";
+import { useT } from "@/lib/i18n";
 
 const RANKS = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
 const SUITS = [
-  { value: "s", icon: "♠", name: "Spade" },
-  { value: "h", icon: "♥", name: "Heart" },
-  { value: "d", icon: "♦", name: "Diamond" },
-  { value: "c", icon: "♣", name: "Club" }
+  { value: "s", icon: "♠", key: "suitS" },
+  { value: "h", icon: "♥", key: "suitH" },
+  { value: "d", icon: "♦", key: "suitD" },
+  { value: "c", icon: "♣", key: "suitC" }
 ];
 const POSITIONS = ["UTG", "UTG+1", "Hijack", "Cutoff", "Button", "Small Blind", "Big Blind"];
+const PRESSURES = [
+  ["Chip EV / early stage", "pressure0"],
+  ["Regular payout pressure", "pressure1"],
+  ["Bubble / major pay jump", "pressure2"],
+  ["Satellite survival pressure", "pressure3"]
+];
 
-function CardPicker({ card, onChange, label }) {
+function CardPicker({ card, onChange, label, t }) {
   return (
     <div className="card-picker">
       <span>{label}</span>
@@ -27,7 +34,7 @@ function CardPicker({ card, onChange, label }) {
         <select className={card.suit === "h" || card.suit === "d" ? "red-suit" : ""} value={card.suit} onChange={(e) => onChange({ ...card, suit: e.target.value })}>
           {SUITS.map((s) => (
             <option key={s.value} value={s.value}>
-              {s.icon} {s.name}
+              {s.icon} {t(`handlab.${s.key}`)}
             </option>
           ))}
         </select>
@@ -36,11 +43,8 @@ function CardPicker({ card, onChange, label }) {
   );
 }
 
-function analyze(form) {
-  return analyzeHand(form);
-}
-
 export default function HandLab() {
+  const { t } = useT();
   const [form, setForm] = useState({
     street: "Preflop",
     heroCards: [
@@ -62,21 +66,21 @@ export default function HandLab() {
   const setAction = (id, key, value) => setForm((f) => ({ ...f, actions: f.actions.map((a) => (a.id === id ? { ...a, [key]: value } : a)) }));
   const submit = (e) => {
     e?.preventDefault?.();
-    setResult(analyze(form));
+    setResult(analyzeHand(form));
   };
 
   return (
     <div className="page hand-lab-page">
       <div className="page-title split">
         <div>
-          <span className="tag">HAND LAB · BETA 2</span>
-          <h1>Build any preflop action sequence.</h1>
-          <p>Select exact cards and add every player involved in a multiway pot.</p>
+          <span className="tag">{t("handlab.tag")}</span>
+          <h1>{t("handlab.title")}</h1>
+          <p>{t("handlab.blurb")}</p>
         </div>
         <div className="data-badge">
-          <span>POKERBENCH + CHART</span>
-          <b>Range-weighted mix</b>
-          <small>Argmax frequencies, not a live solve</small>
+          <span>{t("handlab.badge")}</span>
+          <b>{t("handlab.badgeTitle")}</b>
+          <small>{t("handlab.badgeNote")}</small>
         </div>
       </div>
       <div className="hand-lab-grid">
@@ -84,13 +88,13 @@ export default function HandLab() {
           <div className="form-head">
             <Microscope />
             <div>
-              <b>Scenario builder</b>
-              <small>No suit symbols need to be typed.</small>
+              <b>{t("handlab.builder")}</b>
+              <small>{t("handlab.builderHint")}</small>
             </div>
           </div>
           <div className="form-grid">
             <label>
-              <span>Street</span>
+              <span>{t("handlab.street")}</span>
               <select value={form.street} onChange={setField("street")}>
                 {["Preflop", "Flop", "Turn", "River"].map((s) => (
                   <option key={s}>{s}</option>
@@ -98,7 +102,7 @@ export default function HandLab() {
               </select>
             </label>
             <label>
-              <span>Your position</span>
+              <span>{t("handlab.position")}</span>
               <select value={form.heroPos} onChange={setField("heroPos")}>
                 {POSITIONS.map((p) => (
                   <option key={p}>{p}</option>
@@ -106,14 +110,14 @@ export default function HandLab() {
               </select>
             </label>
             <label>
-              <span>Your stack</span>
+              <span>{t("handlab.stack")}</span>
               <div className="input-suffix">
                 <input type="number" value={form.heroStack} onChange={setField("heroStack")} />
                 <b>BB</b>
               </div>
             </label>
             <label>
-              <span>Average stack</span>
+              <span>{t("handlab.avgStack")}</span>
               <div className="input-suffix">
                 <input type="number" value={form.averageStack} onChange={setField("averageStack")} />
                 <b>BB</b>
@@ -121,26 +125,28 @@ export default function HandLab() {
             </label>
           </div>
           <div className="hole-card-builder">
-            <CardPicker label="Card 1" card={form.heroCards[0]} onChange={(c) => setCard(0, c)} />
-            <CardPicker label="Card 2" card={form.heroCards[1]} onChange={(c) => setCard(1, c)} />
+            <CardPicker label={t("handlab.card1")} card={form.heroCards[0]} onChange={(c) => setCard(0, c)} t={t} />
+            <CardPicker label={t("handlab.card2")} card={form.heroCards[1]} onChange={(c) => setCard(1, c)} t={t} />
             <div className="hand-preview">
               <FaceCard c={`${form.heroCards[0].rank}${SUITS.find((s) => s.value === form.heroCards[0].suit).icon}`} />
               <FaceCard c={`${form.heroCards[1].rank}${SUITS.find((s) => s.value === form.heroCards[1].suit).icon}`} />
             </div>
           </div>
           <label className="pressure-field">
-            <span>Tournament context</span>
+            <span>{t("handlab.pressure")}</span>
             <select value={form.pressure} onChange={setField("pressure")}>
-              {["Chip EV / early stage", "Regular payout pressure", "Bubble / major pay jump", "Satellite survival pressure"].map((p) => (
-                <option key={p}>{p}</option>
+              {PRESSURES.map(([value, key]) => (
+                <option key={value} value={value}>
+                  {t(`handlab.${key}`)}
+                </option>
               ))}
             </select>
           </label>
           <div className="action-builder">
             <div className="action-builder-head">
               <div>
-                <span>ACTION SEQUENCE</span>
-                <small>Add players in chronological order</small>
+                <span>{t("handlab.sequence")}</span>
+                <small>{t("handlab.sequenceHint")}</small>
               </div>
               <button
                 type="button"
@@ -151,7 +157,7 @@ export default function HandLab() {
                   }))
                 }
               >
-                <Plus /> Add action
+                <Plus /> {t("handlab.add")}
               </button>
             </div>
             {form.actions.map((a, i) => (
@@ -164,7 +170,7 @@ export default function HandLab() {
                 </select>
                 <div className="mini-input">
                   <input type="number" value={a.stack} onChange={(e) => setAction(a.id, "stack", e.target.value)} />
-                  <span>stack</span>
+                  <span>{t("handlab.stackMini")}</span>
                 </div>
                 <select value={a.action} onChange={(e) => setAction(a.id, "action", e.target.value)}>
                   {["Fold", "Call", "Open", "Raise", "All-in", "Check", "Bet", "Check-raise"].map((x) => (
@@ -173,7 +179,7 @@ export default function HandLab() {
                 </select>
                 <div className="mini-input">
                   <input type="number" step="0.1" value={a.size} onChange={(e) => setAction(a.id, "size", e.target.value)} />
-                  <span>to BB</span>
+                  <span>{t("handlab.toBb")}</span>
                 </div>
                 <button type="button" className="delete-action" onClick={() => setForm((f) => ({ ...f, actions: f.actions.filter((x) => x.id !== a.id) }))}>
                   <Trash2 />
@@ -182,7 +188,7 @@ export default function HandLab() {
             ))}
           </div>
           <button className="cta analyze-button" type="submit">
-            <Search /> Analyze this decision
+            <Search /> {t("handlab.analyze")}
           </button>
         </form>
         <section className="hand-result">
@@ -195,14 +201,14 @@ export default function HandLab() {
                   </span>
                 </div>
                 <div>
-                  <small>ACTION EVALUATION · {result.confidence.toUpperCase()} CONFIDENCE</small>
+                  <small>{t("handlab.eval", { conf: result.confidence.toUpperCase() })}</small>
                   <h2>{result.verdict}</h2>
                   <p>{result.explanation}</p>
                 </div>
               </div>
               <div className="range-answer">
-                <small>MULTIWAY RANGE MAP</small>
-                <h3>The player behind you matters as much as the short-stack jam.</h3>
+                <small>{t("handlab.rangeMap")}</small>
+                <h3>{t("handlab.rangeTitle")}</h3>
                 <div className="range-columns">
                   {result.columns.map((col) => (
                     <article key={col.title} className={`range-${col.tone}`}>
@@ -217,12 +223,12 @@ export default function HandLab() {
               <div className="example-conclusion">
                 <Star />
                 <div>
-                  <b>Practical default</b>
+                  <b>{t("handlab.practical")}</b>
                   <p>{result.conclusion}</p>
                 </div>
               </div>
               <div className="missing-data">
-                <b>To improve confidence, add:</b>
+                <b>{t("handlab.improve")}</b>
                 {result.missing.map((m) => (
                   <span key={m}>{m}</span>
                 ))}
@@ -231,14 +237,14 @@ export default function HandLab() {
           ) : (
             <div className="analysis-empty">
               <BrainCircuit />
-              <h2>Your example is ready</h2>
-              <p>K♠Q♠ in the Big Blind, facing a Button 2BB open and Small Blind 7BB all-in.</p>
-              <button onClick={submit}>Analyze KQs decision</button>
+              <h2>{t("handlab.ready")}</h2>
+              <p>{t("handlab.readyBody")}</p>
+              <button onClick={submit}>{t("handlab.analyzeKq")}</button>
             </div>
           )}
         </section>
       </div>
-      <p className="disclaimer">Hand Lab blends hierarchical PokerBench GTO labels with a 6-max chart prior. Short stacks, tournament ICM, antes and exact sizings can change the recommendation.</p>
+      <p className="disclaimer">{t("handlab.disclaimer")}</p>
     </div>
   );
 }

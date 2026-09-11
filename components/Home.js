@@ -1,25 +1,29 @@
 "use client";
 
+import { useState } from "react";
 import { ChevronRight, GraduationCap, RotateCcw, Trophy, Zap } from "lucide-react";
-import { MODULES, SOURCE, SPOTS, pct } from "@/lib/spots";
+import { DRILL_POOLS, MODULES, SOURCE, SPOTS, indicesFor, pct } from "@/lib/spots";
+import { useT } from "@/lib/i18n";
 
 export default function Home({ start, answered, correct, reviewQueue, openLounge }) {
+  const { t } = useT();
+  const [pool, setPool] = useState("all");
+
   return (
     <div className="page home">
       <section className="welcome">
         <div>
-          <span className="tag">POKERBENCH · 6-MAX GTO</span>
+          <span className="tag">{t("home.tag")}</span>
           <h1>
-            Build poker instincts.
+            {t("home.title1")}
             <br />
-            <em>One decision at a time.</em>
+            <em>{t("home.title2")}</em>
           </h1>
           <p>
-            Drill real solver nodes from {SOURCE.name}: {SOURCE.preflop} preflop and {SOURCE.postflop} postflop, 100bb cash. Labels are the
-            highest-frequency GTO action, not a mixed-strategy dump.
+            {t("home.blurb", { name: SOURCE.name, preflop: SOURCE.preflop, postflop: SOURCE.postflop })}
           </p>
-          <button className="cta" onClick={() => start("all")}>
-            Continue training <ChevronRight />
+          <button className="cta" onClick={() => start(pool)}>
+            {t("home.cta")} <ChevronRight />
           </button>
         </div>
         <div className="orbit">
@@ -41,46 +45,57 @@ export default function Home({ start, answered, correct, reviewQueue, openLounge
           <i />
           <b>
             {SPOTS.length.toLocaleString()}
-            <small>TRAINING SPOTS</small>
+            <small>{t("home.spots")}</small>
           </b>
         </div>
       </section>
 
       <section className="mode-picker">
         <div className="mode-intro">
-          <small>CHOOSE YOUR SESSION</small>
-          <h2>How do you want to train?</h2>
-          <p>Every session is five random PokerBench hands. Misses go to your review queue.</p>
+          <small>{t("home.choose")}</small>
+          <h2>{t("home.how")}</h2>
+          <p>{t("home.howBody")}</p>
         </div>
-        <button onClick={() => start("all", "learn")}>
+        <div className="pool-chips">
+          <small>{t("home.pool")}</small>
+          <div>
+            {DRILL_POOLS.map((key) => (
+              <button key={key} type="button" className={pool === key ? "on" : ""} onClick={() => setPool(key)}>
+                {t(`pools.${key}`)}
+                <em>{indicesFor(key).length.toLocaleString()}</em>
+              </button>
+            ))}
+          </div>
+        </div>
+        <button onClick={() => start(pool, "learn")}>
           <GraduationCap />
           <span>
-            <b>Learn</b>
-            <small>No pressure · full line review</small>
+            <b>{t("home.learn")}</b>
+            <small>{t("home.learnHint")}</small>
           </span>
           <ChevronRight />
         </button>
-        <button onClick={() => start("all", "drill")}>
+        <button onClick={() => start(pool, "drill")}>
           <Zap />
           <span>
-            <b>Drill</b>
-            <small>Speed XP · combo scoring</small>
+            <b>{t("home.drill")}</b>
+            <small>{t("home.drillHint")}</small>
           </span>
           <ChevronRight />
         </button>
-        <button onClick={() => start("all", "challenge")}>
+        <button onClick={() => start(pool, "challenge")}>
           <Trophy />
           <span>
-            <b>Challenge</b>
-            <small>3 lives · five-hand score</small>
+            <b>{t("home.challenge")}</b>
+            <small>{t("home.challengeHint")}</small>
           </span>
           <ChevronRight />
         </button>
         <button className="review-mode" disabled={!reviewQueue.length} onClick={() => start("all", "review", reviewQueue)}>
           <RotateCcw />
           <span>
-            <b>Smart Review</b>
-            <small>{reviewQueue.length ? `${reviewQueue.length} weak or slow spots ready` : "Complete hands to build your queue"}</small>
+            <b>{t("home.review")}</b>
+            <small>{reviewQueue.length ? t("home.reviewReady", { n: reviewQueue.length }) : t("home.reviewEmpty")}</small>
           </span>
           <ChevronRight />
         </button>
@@ -88,57 +103,59 @@ export default function Home({ start, answered, correct, reviewQueue, openLounge
 
       <button className="lounge-banner" onClick={openLounge}>
         <div>
-          <small>PARTY TABLE</small>
-          <b>Sit with friends. Real Hold’em keeps dealing.</b>
-          <span>Live chat, emoji reactions, big characters — and a live 9-max table. Play chips only.</span>
+          <small>{t("home.loungeTag")}</small>
+          <b>{t("home.loungeTitle")}</b>
+          <span>{t("home.loungeBody")}</span>
         </div>
-        <em>Join the lounge</em>
+        <em>{t("home.loungeCta")}</em>
       </button>
 
       <section className="quick">
         <div>
-          <small>OVERALL ACCURACY</small>
+          <small>{t("home.accuracy")}</small>
           <strong>{pct(correct, answered)}%</strong>
           <div className="bar">
             <i style={{ width: `${pct(correct, answered)}%` }} />
           </div>
-          <span>{answered ? `${correct} of ${answered} decisions matched the solver` : "Complete your first hand to begin"}</span>
+          <span>{answered ? t("home.accuracyBody", { correct, answered }) : t("home.accuracyEmpty")}</span>
         </div>
         <div>
-          <small>CURRENT PATH</small>
-          <b>Preflop</b>
-          <span>{SOURCE.preflop} · 6-max 100bb</span>
+          <small>{t("home.path")}</small>
+          <b>{t("home.pathName")}</b>
+          <span>{t("home.pathMeta", { preflop: SOURCE.preflop })}</span>
           <button onClick={() => start("preflop")}>
-            Resume <ChevronRight />
+            {t("home.resume")} <ChevronRight />
           </button>
         </div>
         <div>
-          <small>TODAY’S CHALLENGE</small>
-          <b>Defend the Big Blind</b>
-          <span>5 random BB spots</span>
-          <button onClick={() => start("bb", "challenge")}>
-            Start challenge <ChevronRight />
+          <small>{t("home.today")}</small>
+          <b>{t("home.todayName")}</b>
+          <span>{t("home.todayMeta")}</span>
+          <button onClick={() => start("bb-defend", "challenge")}>
+            {t("home.start")} <ChevronRight />
           </button>
         </div>
       </section>
 
       <div className="section-title">
         <div>
-          <small>YOUR LEARNING PATH</small>
-          <h2>From first-in opens to river decisions.</h2>
+          <small>{t("home.pathTitle")}</small>
+          <h2>{t("home.pathSub")}</h2>
         </div>
-        <span>{SPOTS.length.toLocaleString()} PokerBench spots</span>
+        <span>{t("home.pathCount", { n: SPOTS.length.toLocaleString() })}</span>
       </div>
       <div className="module-grid">
         {MODULES.map((mod, i) => (
           <article key={mod.id}>
             <span>0{i + 1}</span>
             <div className="module-icon">{i === 0 ? "♠" : i === 1 ? "◇" : i === 2 ? "♜" : "▲"}</div>
-            <small>{mod.count.toLocaleString()} SPOTS</small>
-            <h3>{mod.name}</h3>
-            <p>{mod.blurb}</p>
+            <small>
+              {mod.count.toLocaleString()} {t("home.spotsLabel")}
+            </small>
+            <h3>{t(`modules.${mod.id}`)}</h3>
+            <p>{t(`modules.${mod.id}Blurb`)}</p>
             <button onClick={() => start(mod.id)}>
-              Open module <ChevronRight />
+              {t("home.openModule")} <ChevronRight />
             </button>
           </article>
         ))}
