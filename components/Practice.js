@@ -2,10 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { BrainCircuit, ChevronRight, Clock3, Heart, Star, Zap } from "lucide-react";
-import { SPOTS } from "@/lib/spots";
+import { SOURCE, gradeChoice } from "@/lib/spots";
 import { FaceCard } from "./Card";
 
-export default function Practice({ item, idx, answer, choose, next, combo, xp, mode, lives }) {
+function gradeLabel(grade) {
+  if (grade === "optimal") return "Preferred action";
+  if (grade === "close") return "Close sizing";
+  return "Review this spot";
+}
+
+export default function Practice({ item, idx, session, total, answer, choose, next, combo, xp, mode, lives }) {
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
@@ -15,19 +21,18 @@ export default function Practice({ item, idx, answer, choose, next, combo, xp, m
     return () => clearInterval(t);
   }, [idx, answer]);
 
-  const actions = Object.keys(item.mix);
+  const actions = item.moves;
   const speedBonus = 3 * Math.max(0, 15 - elapsed);
-  const freq = (answer && item.mix[answer]) || 0;
-  const bestEv = Math.max(...Object.values(item.ev).map(Number));
-  const evLoss = answer ? Math.max(0, bestEv - Number(item.ev[answer])) : 0;
-  const grade = answer ? (answer === item.a ? "optimal" : freq >= 25 || evLoss <= 0.25 ? "mixed" : "review") : null;
+  const result = answer ? gradeChoice(item, answer) : null;
+  const grade = result?.grade || null;
   const points =
     grade === "optimal"
       ? 80 + (mode === "learn" ? 0 : speedBonus + 10 * Math.min(combo, 5))
-      : grade === "mixed"
+      : grade === "close"
         ? 55 + (mode === "learn" ? 0 : speedBonus + 10 * Math.min(combo, 5))
-        : 15;
-  const mixVals = Object.values(item.mix);
+        : grade
+          ? 15
+          : 0;
 
   return (
     <div className="page practice">
@@ -56,7 +61,7 @@ export default function Practice({ item, idx, answer, choose, next, combo, xp, m
           <h1>{item.spot}</h1>
         </div>
         <div>
-          <b>{idx + 1}</b> / {SPOTS.length}
+          <b>{session}</b> / {total}
         </div>
       </div>
       <div className="trainer">
@@ -68,7 +73,7 @@ export default function Practice({ item, idx, answer, choose, next, combo, xp, m
               <small>{mode === "learn" ? "thinking time" : `+${speedBonus} speed XP`}</small>
             </div>
             <div className="villain">
-              VILLAIN
+              ACTION
               <small>{item.villain}</small>
             </div>
             <div className="pot">
@@ -93,9 +98,9 @@ export default function Practice({ item, idx, answer, choose, next, combo, xp, m
                   <>
                     <Star /> NICE READ!
                   </>
-                ) : grade === "mixed" ? (
+                ) : grade === "close" ? (
                   <>
-                    <Zap /> VALID MIX!
+                    <Zap /> CLOSE SIZING
                   </>
                 ) : (
                   "ADD TO REVIEW"
@@ -110,11 +115,13 @@ export default function Practice({ item, idx, answer, choose, next, combo, xp, m
               {actions.map((a) => (
                 <button
                   key={a}
-                  className={answer ? (a === item.a || (a === answer && grade === "mixed") ? "right" : a === answer ? "wrong" : "dim") : ""}
+                  className={
+                    answer ? (a === item.a ? "right" : a === answer && grade === "close" ? "right" : a === answer ? "wrong" : "dim") : ""
+                  }
                   onClick={() => choose(a, elapsed)}
                 >
                   {a}
-                  <small>{item.ev[a]} EV</small>
+                  <small>{answer ? (a === item.a ? "solver pick" : a === answer ? "your choice" : "legal") : "legal action"}</small>
                 </button>
               ))}
             </div>
@@ -124,42 +131,30 @@ export default function Practice({ item, idx, answer, choose, next, combo, xp, m
           </div>
         </section>
         <aside className="analysis">
-          <span className="label">SOLVER VIEW</span>
+          <span className="label">SOLVER LABEL</span>
           {answer ? (
             <>
               <div className={"verdict " + (grade !== "review" ? "good" : "bad")}>
                 <b>
-                  +{points} XP · {grade === "optimal" ? "Preferred action" : grade === "mixed" ? "Valid mixed action" : "Review this spot"}
+                  +{points} XP · {gradeLabel(grade)}
                 </b>
                 <span>
-                  {freq}% solver frequency · {evLoss.toFixed(2)} BB EV loss
+                  {item.source} · {item.dataset} argmax
                 </span>
               </div>
-              <h3>Interactive strategy mix</h3>
-              <div
-                className="mix-donut"
-                style={{
-                  background: `conic-gradient(var(--cyan) 0 ${mixVals[0]}%,var(--blue) ${mixVals[0]}% ${mixVals[0] + (mixVals[1] || 0)}%,#ff6073 0)`
-                }}
-              >
+              <div className="solver-source">
+                <small>PREFERRED ACTION</small>
+                <b>{item.a}</b>
                 <span>
-                  <b>{Math.max(...mixVals)}%</b>
-                  max frequency
+                  {SOURCE.game}. Preflop labels from {SOURCE.preflop}; postflop from {SOURCE.postflop}.
                 </span>
               </div>
-              {Object.entries(item.mix).map(([k, v]) => (
-                <div className="mix" key={k}>
-                  <label>
-                    {k}
-                    <b>{v}%</b>
-                  </label>
-                  <div>
-                    <i style={{ width: `${v}%` }} />
-                  </div>
-                </div>
-              ))}
+              <div className="line-read">
+                <small>ACTION LINE</small>
+                <p>{item.line}</p>
+              </div>
               <div className="explain">
-                <small>WHY IT WORKS</small>
+                <small>WHY THIS LABEL</small>
                 <p>{item.why}</p>
               </div>
               <div className="coach">
@@ -173,8 +168,8 @@ export default function Practice({ item, idx, answer, choose, next, combo, xp, m
           ) : (
             <div className="waiting">
               <BrainCircuit />
-              <h3>Read the range</h3>
-              <p>{mode === "learn" ? "Think through position, range and board texture. There is no speed pressure." : "Choose your action before the timer reaches 30 seconds for a speed bonus."}</p>
+              <h3>Read the line</h3>
+              <p>{item.line}</p>
               <div className="mini-quest">
                 <Zap />
                 <span>
@@ -185,7 +180,10 @@ export default function Practice({ item, idx, answer, choose, next, combo, xp, m
           )}
         </aside>
       </div>
-      <p className="disclaimer">Training strategies are curated educational examples, not live GTO Wizard outputs or gambling advice.</p>
+      <p className="disclaimer">
+        {SOURCE.name} test spots · {SOURCE.preflop} preflop / {SOURCE.postflop} postflop · highest-frequency GTO action only · not gambling
+        advice.
+      </p>
     </div>
   );
 }

@@ -17,7 +17,7 @@ import {
   Users,
   Zap
 } from "lucide-react";
-import { SPOTS } from "@/lib/spots";
+import { SPOTS, gradeChoice, indicesFor, sampleIndices, safeSpot } from "@/lib/spots";
 import { FACES } from "@/lib/characters";
 import Home from "./Home";
 import Learn from "./Learn";
@@ -60,13 +60,13 @@ export default function App() {
 
   useEffect(() => {
     try {
-      setHistory(JSON.parse(localStorage.getItem("hl-progress") || "[]"));
+      setHistory(JSON.parse(localStorage.getItem("hl-progress-v2") || "[]"));
       setNick(localStorage.getItem("hl-nick") || "");
       setFace(localStorage.getItem("hl-face") || "😎");
     } catch {}
     setNickReady(true);
   }, []);
-  useEffect(() => localStorage.setItem("hl-progress", JSON.stringify(history)), [history]);
+  useEffect(() => localStorage.setItem("hl-progress-v2", JSON.stringify(history)), [history]);
   useEffect(() => {
     if (nick) localStorage.setItem("hl-nick", nick);
   }, [nick]);
@@ -83,7 +83,9 @@ export default function App() {
     setNavOpen(false);
   }, [page]);
 
-  const item = SPOTS[hand];
+  const item = safeSpot(hand);
+  const sessionLen = reviewSet?.length || 5;
+  const sessionNum = reviewCursor + 1;
   const correct = history.filter((h) => h.ok).length;
   const answered = history.length;
   const xp = history.reduce((s, h) => s + (h.points ?? (h.ok ? 80 : 15)), 0);
@@ -93,12 +95,12 @@ export default function App() {
   const reviewQueue = [...new Set(history.filter((h) => !h.ok || h.seconds > 15).map((h) => h.hand))];
   const sessionResults = history.slice(sessionStart);
 
-  const start = (idx = 0, nextMode = "learn", queue = null) => {
-    const q = queue?.length ? queue : null;
+  const start = (poolKey = "all", nextMode = "learn", queue = null) => {
+    const q = queue?.length ? queue : sampleIndices(indicesFor(poolKey), 5);
     setMode(nextMode);
     setReviewSet(q);
     setReviewCursor(0);
-    setHand(q ? q[0] : idx);
+    setHand(q[0] ?? 0);
     setAnswer(null);
     setLives(3);
     setSessionStart(history.length);
@@ -192,16 +194,15 @@ export default function App() {
           <Practice
             item={item}
             idx={hand}
+            session={Math.min(sessionNum, sessionLen)}
+            total={sessionLen}
             answer={answer}
             choose={(choice, seconds = 15) => {
               if (answer) return;
               setAnswer(choice);
-              const frequency = item.mix[choice] || 0;
-              const evLoss = Math.max(0, Math.max(...Object.values(item.ev).map(Number)) - Number(item.ev[choice]));
-              const grade = choice === item.a ? "optimal" : frequency >= 25 || evLoss <= 0.25 ? "mixed" : "review";
-              const ok = grade !== "review";
+              const { grade, ok, frequency, evLoss } = gradeChoice(item, choice);
               const bonus = mode === "learn" ? 0 : 3 * Math.max(0, 15 - seconds) + 10 * Math.min(combo, 5);
-              const points = (grade === "optimal" ? 80 : grade === "mixed" ? 55 : 15) + (ok ? bonus : 0);
+              const points = (grade === "optimal" ? 80 : grade === "close" ? 55 : 15) + (ok ? bonus : 0);
               if (mode === "challenge" && !ok) setLives((n) => Math.max(0, n - 1));
               setDealt((n) => n + 1);
               setHistory((h) => [
@@ -222,14 +223,18 @@ export default function App() {
               ]);
             }}
             next={() => {
-              if (dealt >= 5 || (mode === "challenge" && lives <= 0)) {
+              if (dealt >= sessionLen || (mode === "challenge" && lives <= 0)) {
                 setAnswer(null);
                 setPage("summary");
                 return;
               }
               setAnswer(null);
               if (reviewSet?.length) {
-                const n = (reviewCursor + 1) % reviewSet.length;
+                const n = reviewCursor + 1;
+                if (n >= reviewSet.length) {
+                  setPage("summary");
+                  return;
+                }
                 setReviewCursor(n);
                 setHand(reviewSet[n]);
               } else setHand((n) => (n + 1) % SPOTS.length);
@@ -270,7 +275,7 @@ export default function App() {
               <>
                 <small className="tag">HOW IT WORKS</small>
                 <h2>A hangout with real Hold’em.</h2>
-                <p>The Lounge is a party table: pick a character, sit down, and talk. Texas Hold’em keeps dealing in the background. Chips are play money only. Learn / Drill stay on Home if you want GTO training.</p>
+                <p>The Lounge is a party table: pick a character, sit down, and talk. Texas Hold’em keeps dealing in the background. Chips are play money only. Learn / Drill use PokerBench solver labels (GTOWizard preflop, WASM-Postflop postflop).</p>
                 <button className="cta" onClick={() => setModal(null)}>
                   Got it
                 </button>

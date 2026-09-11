@@ -221,7 +221,7 @@ export default function Live() {
         <div>
           <span className="tag">LIVE · 6-MAX HUD</span>
           <h1>Tag the table. Get a mix.</h1>
-          <p>홀카드는 테이블 위, 플랍은 펠트 한가운데에 깔립니다. Postflop 다음 액션을 넣으면 바로 아래 추천이 나옵니다.</p>
+          <p>홀카드는 테이블 위, 플랍은 펠트 한가운데. 프리플랍 믹스는 PokerBench GTO 라벨을 차트 프라이어 쪽으로 수축한 값이고, HUD는 인구 평균 대비로 조금씩만 밀어 줍니다.</p>
         </div>
         <div className="live-top-actions">
           <button className={"ghost" + (hand.street === "flop" ? " on" : "")} type="button" onClick={goFlop}>
@@ -381,7 +381,15 @@ export default function Live() {
       ) : null}
 
       <section className={"live-rec" + (rec.action === "Fold" ? " fold" : rec.mix.length ? " go" : "")}>
-        <small>{hand.street === "flop" ? "FLOP RECOMMENDATION" : "RECOMMENDATION"}</small>
+        <small>
+          {hand.street === "flop"
+            ? "FLOP RECOMMENDATION"
+            : rec.source === "pokerbench"
+              ? `POKERBENCH n=${rec.benchN}${rec.benchTable ? ` · ${rec.benchTable}` : ""} · ${Math.round((rec.solverWeight || 0) * 100)}% SOLVER WEIGHT`
+              : rec.mix.length
+                ? "CHART PRIOR · 6-MAX 100BB"
+                : "RECOMMENDATION"}
+        </small>
         <h2>{rec.headline}</h2>
         <b>{rec.detail}</b>
         {rec.mix.length ? (
@@ -397,6 +405,15 @@ export default function Live() {
                 </div>
               </div>
             ))}
+          </div>
+        ) : null}
+        {rec.equity && hand.street !== "flop" ? (
+          <div className="live-equity">
+            <span>Equity vs {rec.equity.vs}</span>
+            <b>{rec.equity.pct}%</b>
+            <small>
+              {rec.equity.combos ? `${rec.equity.combos} combos` : "random remainder"} · {rec.equity.samples} samples
+            </small>
           </div>
         ) : null}
         <p>{rec.reason}</p>

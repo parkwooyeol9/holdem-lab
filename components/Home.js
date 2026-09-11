@@ -1,21 +1,24 @@
 "use client";
 
 import { ChevronRight, GraduationCap, RotateCcw, Trophy, Zap } from "lucide-react";
-import { MODULES, SPOTS, pct } from "@/lib/spots";
+import { MODULES, SOURCE, SPOTS, pct } from "@/lib/spots";
 
 export default function Home({ start, answered, correct, reviewQueue, openLounge }) {
   return (
     <div className="page home">
       <section className="welcome">
         <div>
-          <span className="tag">GTO, MADE PLAYABLE</span>
+          <span className="tag">POKERBENCH · 6-MAX GTO</span>
           <h1>
             Build poker instincts.
             <br />
             <em>One decision at a time.</em>
           </h1>
-          <p>Interactive lessons turn solver strategy into clear, repeatable decisions. No charts to memorize. No jargon required.</p>
-          <button className="cta" onClick={() => start(answered % SPOTS.length)}>
+          <p>
+            Drill real solver nodes from {SOURCE.name}: {SOURCE.preflop} preflop and {SOURCE.postflop} postflop, 100bb cash. Labels are the
+            highest-frequency GTO action, not a mixed-strategy dump.
+          </p>
+          <button className="cta" onClick={() => start("all")}>
             Continue training <ChevronRight />
           </button>
         </div>
@@ -37,7 +40,7 @@ export default function Home({ start, answered, correct, reviewQueue, openLounge
           </div>
           <i />
           <b>
-            {SPOTS.length}
+            {SPOTS.length.toLocaleString()}
             <small>TRAINING SPOTS</small>
           </b>
         </div>
@@ -47,17 +50,17 @@ export default function Home({ start, answered, correct, reviewQueue, openLounge
         <div className="mode-intro">
           <small>CHOOSE YOUR SESSION</small>
           <h2>How do you want to train?</h2>
-          <p>Every session is five hands. Your results shape the next review queue.</p>
+          <p>Every session is five random PokerBench hands. Misses go to your review queue.</p>
         </div>
-        <button onClick={() => start(answered % SPOTS.length, "learn")}>
+        <button onClick={() => start("all", "learn")}>
           <GraduationCap />
           <span>
             <b>Learn</b>
-            <small>No pressure · full coaching</small>
+            <small>No pressure · full line review</small>
           </span>
           <ChevronRight />
         </button>
-        <button onClick={() => start(answered % SPOTS.length, "drill")}>
+        <button onClick={() => start("all", "drill")}>
           <Zap />
           <span>
             <b>Drill</b>
@@ -65,7 +68,7 @@ export default function Home({ start, answered, correct, reviewQueue, openLounge
           </span>
           <ChevronRight />
         </button>
-        <button onClick={() => start(0, "challenge")}>
+        <button onClick={() => start("all", "challenge")}>
           <Trophy />
           <span>
             <b>Challenge</b>
@@ -73,7 +76,7 @@ export default function Home({ start, answered, correct, reviewQueue, openLounge
           </span>
           <ChevronRight />
         </button>
-        <button className="review-mode" disabled={!reviewQueue.length} onClick={() => start(0, "review", reviewQueue)}>
+        <button className="review-mode" disabled={!reviewQueue.length} onClick={() => start("all", "review", reviewQueue)}>
           <RotateCcw />
           <span>
             <b>Smart Review</b>
@@ -99,21 +102,21 @@ export default function Home({ start, answered, correct, reviewQueue, openLounge
           <div className="bar">
             <i style={{ width: `${pct(correct, answered)}%` }} />
           </div>
-          <span>{answered ? `${correct} of ${answered} decisions correct` : "Complete your first hand to begin"}</span>
+          <span>{answered ? `${correct} of ${answered} decisions matched the solver` : "Complete your first hand to begin"}</span>
         </div>
         <div>
           <small>CURRENT PATH</small>
-          <b>Foundations</b>
-          <span>{Math.min(answered, 3)} of 3 spots completed</span>
-          <button onClick={() => start(0)}>
+          <b>Preflop</b>
+          <span>{SOURCE.preflop} · 6-max 100bb</span>
+          <button onClick={() => start("preflop")}>
             Resume <ChevronRight />
           </button>
         </div>
         <div>
           <small>TODAY’S CHALLENGE</small>
           <b>Defend the Big Blind</b>
-          <span>3 hands · about 4 minutes</span>
-          <button onClick={() => start(0)}>
+          <span>5 random BB spots</span>
+          <button onClick={() => start("bb", "challenge")}>
             Start challenge <ChevronRight />
           </button>
         </div>
@@ -122,20 +125,20 @@ export default function Home({ start, answered, correct, reviewQueue, openLounge
       <div className="section-title">
         <div>
           <small>YOUR LEARNING PATH</small>
-          <h2>From first principles to river decisions.</h2>
+          <h2>From first-in opens to river decisions.</h2>
         </div>
-        <span>9 interactive spots</span>
+        <span>{SPOTS.length.toLocaleString()} PokerBench spots</span>
       </div>
       <div className="module-grid">
         {MODULES.map((mod, i) => (
-          <article key={mod[0]} className={i === 3 ? "locked" : ""}>
+          <article key={mod.id}>
             <span>0{i + 1}</span>
-            <div className="module-icon">{i === 0 ? "♠" : i === 1 ? "◇" : i === 2 ? "♜" : "◫"}</div>
-            <small>{mod[1]} SPOTS</small>
-            <h3>{mod[0]}</h3>
-            <p>{mod[2]}</p>
-            <button disabled={!mod[1]} onClick={() => start(3 * i)}>
-              {mod[1] ? "Open module" : "Locked"} <ChevronRight />
+            <div className="module-icon">{i === 0 ? "♠" : i === 1 ? "◇" : i === 2 ? "♜" : "▲"}</div>
+            <small>{mod.count.toLocaleString()} SPOTS</small>
+            <h3>{mod.name}</h3>
+            <p>{mod.blurb}</p>
+            <button onClick={() => start(mod.id)}>
+              Open module <ChevronRight />
             </button>
           </article>
         ))}

@@ -1,14 +1,7 @@
 "use client";
 
 import { ChevronRight } from "lucide-react";
-import { MODULES } from "@/lib/spots";
-
-const TAGS = [
-  ["Position", "Opening ranges", "3-bets"],
-  ["Board texture", "C-bets", "Draws"],
-  ["Barrels", "Blockers", "Sizing"],
-  ["Range construction"]
-];
+import { MODULES, SOURCE } from "@/lib/spots";
 
 export default function Learn({ start }) {
   return (
@@ -16,24 +9,26 @@ export default function Learn({ start }) {
       <div className="page-title">
         <span className="tag">CURRICULUM</span>
         <h1>Learn the game in layers.</h1>
-        <p>Each module introduces one idea, then tests it in realistic decisions.</p>
+        <p>
+          Each module samples {SOURCE.name} nodes for that street. Preflop uses {SOURCE.preflop}; flop, turn and river use {SOURCE.postflop}.
+        </p>
       </div>
       <div className="course-list">
         {MODULES.map((mod, i) => (
-          <article key={mod[0]}>
+          <article key={mod.id}>
             <span className="num">0{i + 1}</span>
             <div>
-              <small>{mod[1] ? `${mod[1]} INTERACTIVE SPOTS` : "IN DEVELOPMENT"}</small>
-              <h2>{mod[0]}</h2>
-              <p>{mod[2]}</p>
+              <small>{mod.count.toLocaleString()} INTERACTIVE SPOTS</small>
+              <h2>{mod.name}</h2>
+              <p>{mod.blurb}</p>
             </div>
             <div className="skill-tags">
-              {TAGS[i].map((t) => (
+              {mod.tags.map((t) => (
                 <span key={t}>{t}</span>
               ))}
             </div>
-            <button disabled={!mod[1]} onClick={() => start(3 * i)}>
-              {mod[1] ? "Start" : "Soon"} <ChevronRight />
+            <button onClick={() => start(mod.id)}>
+              Start <ChevronRight />
             </button>
           </article>
         ))}

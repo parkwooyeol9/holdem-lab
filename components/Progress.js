@@ -1,13 +1,13 @@
 "use client";
 
 import { ChartNoAxesColumnIncreasing, RotateCcw } from "lucide-react";
-import { MODULES, SPOTS, pct } from "@/lib/spots";
+import { MODULES, SPOTS, pct, safeSpot } from "@/lib/spots";
 
 export default function Progress({ history, correct, filter, setFilter, reset }) {
   const rows = history.filter((h) => filter === "All" || (filter === "Correct" ? h.ok : !h.ok)).slice().reverse();
-  const modules = [0, 1, 2].map((i) => {
-    const plays = history.filter((h) => Math.floor(h.hand / 3) === i);
-    return { name: MODULES[i][0], played: plays.length, score: pct(plays.filter((h) => h.ok).length, plays.length) };
+  const modules = MODULES.map((mod) => {
+    const plays = history.filter((h) => safeSpot(h.hand).street === mod.id);
+    return { name: mod.name, played: plays.length, score: pct(plays.filter((h) => h.ok).length, plays.length) };
   });
   const xp = history.reduce((s, h) => s + (h.points ?? (h.ok ? 80 : 15)), 0);
 
@@ -17,7 +17,7 @@ export default function Progress({ history, correct, filter, setFilter, reset })
         <div>
           <span className="tag">PERFORMANCE</span>
           <h1>Your decision journal.</h1>
-          <p>See what is improving and which spots deserve another pass.</p>
+          <p>See what is improving and which PokerBench streets deserve another pass.</p>
         </div>
         <button className="ghost" onClick={reset}>
           <RotateCcw /> Reset progress
@@ -32,7 +32,7 @@ export default function Progress({ history, correct, filter, setFilter, reset })
         <div>
           <small>ACCURACY</small>
           <b>{pct(correct, history.length)}%</b>
-          <span>{correct} correct decisions</span>
+          <span>{correct} solver matches</span>
         </div>
         <div>
           <small>XP EARNED</small>
@@ -55,7 +55,7 @@ export default function Progress({ history, correct, filter, setFilter, reset })
           </div>
         </article>
         <article className="module-chart">
-          <small>MODULE MASTERY</small>
+          <small>STREET MASTERY</small>
           {modules.map((m) => (
             <div className="mastery" key={m.name}>
               <label>
@@ -72,20 +72,24 @@ export default function Progress({ history, correct, filter, setFilter, reset })
           ))}
         </article>
         <article className="decision-map">
-          <small>DECISION MAP</small>
-          <div className="heatmap">
-            {SPOTS.map((spot, i) => {
-              const plays = history.filter((h) => h.hand === i);
+          <small>STREET MAP</small>
+          <div className="heatmap streets">
+            {MODULES.map((mod) => {
+              const plays = history.filter((h) => safeSpot(h.hand).street === mod.id);
               const score = pct(plays.filter((h) => h.ok).length, plays.length);
               return (
-                <button key={i} title={`${spot.spot}: ${plays.length ? plays.length + " attempts" : "unplayed"}`} className={plays.length ? (score >= 70 ? "great" : score >= 40 ? "mid" : "low") : "empty"}>
-                  {i + 1}
+                <button
+                  key={mod.id}
+                  title={`${mod.name}: ${plays.length ? plays.length + " attempts" : "unplayed"}`}
+                  className={plays.length ? (score >= 70 ? "great" : score >= 40 ? "mid" : "low") : "empty"}
+                >
+                  {mod.name}
                   <span>{plays.length ? score + "%" : "—"}</span>
                 </button>
               );
             })}
           </div>
-          <p>Hover each tile to inspect a training spot.</p>
+          <p>{SPOTS.length.toLocaleString()} spots in the pool. Tiles track streets, not every node.</p>
         </article>
       </div>
       <div className="journal">
@@ -100,23 +104,26 @@ export default function Progress({ history, correct, filter, setFilter, reset })
           </div>
         </div>
         {rows.length ? (
-          rows.map((h) => (
-            <div className="row" key={h.id}>
-              <span className={h.ok ? "ok" : "no"}>{h.ok ? "✓" : "!"}</span>
-              <div>
-                <b>{SPOTS[h.hand].spot}</b>
-                <small>
-                  {SPOTS[h.hand].pos} · {SPOTS[h.hand].cards.join(" ")}
-                </small>
+          rows.map((h) => {
+            const spot = safeSpot(h.hand);
+            return (
+              <div className="row" key={h.id}>
+                <span className={h.ok ? "ok" : "no"}>{h.ok ? "✓" : "!"}</span>
+                <div>
+                  <b>{spot.spot}</b>
+                  <small>
+                    {spot.pos} · {spot.cards.join(" ")}
+                  </small>
+                </div>
+                <span>
+                  You chose <b>{h.choice}</b>
+                </span>
+                <span>
+                  <b>+{h.points ?? (h.ok ? 80 : 15)} XP</b>
+                </span>
               </div>
-              <span>
-                You chose <b>{h.choice}</b>
-              </span>
-              <span>
-                <b>+{h.points ?? (h.ok ? 80 : 15)} XP</b>
-              </span>
-            </div>
-          ))
+            );
+          })
         ) : (
           <div className="empty">
             <ChartNoAxesColumnIncreasing />

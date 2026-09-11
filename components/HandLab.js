@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { BrainCircuit, Microscope, Plus, Search, Star, Trash2 } from "lucide-react";
 import { FaceCard } from "./Card";
+import { analyzeHand } from "@/lib/handlab";
 
 const RANKS = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
 const SUITS = [
@@ -36,40 +37,7 @@ function CardPicker({ card, onChange, label }) {
 }
 
 function analyze(form) {
-  const s = `${form.heroCards[0].rank}${form.heroCards[1].rank}${form.heroCards[0].suit === form.heroCards[1].suit ? "s" : "o"}`;
-  const btn = form.actions.find((a) => a.position === "Button" && a.action === "Open");
-  const sb = form.actions.find((a) => a.position === "Small Blind" && a.action === "All-in");
-  if (form.street === "Preflop" && (s === "KQs" || s === "QKs") && btn && sb && form.heroPos === "Big Blind") {
-    const icm = form.pressure !== "Chip EV / early stage";
-    return {
-      score: icm ? 61 : 84,
-      verdict: icm ? "Close: payout pressure can make folding reasonable" : "Re-jam is generally preferred to folding",
-      confidence: "Medium",
-      explanation: icm
-        ? "KQs has strong chip equity, but bubble, satellite or large pay-jump pressure can make survival value dominate. Exact payouts and stack distribution are required."
-        : "KQs is well ahead of a typical 7BB Small Blind jam range and blocks strong Button continues. With 20BB, moving all-in applies maximum pressure to the Button and avoids playing a side pot out of position. Folding is usually too tight in a chip-EV setting.",
-      columns: [
-        { title: "SB 7BB jam", tone: "value", items: ["Many pairs", "Broadway aces and kings", "Suited aces and connected hands"] },
-        { title: "BTN calls your jam", tone: "draw", items: ["Usually TT+/AQ+", "May widen versus aggressive image", "This residual risk lowers KQs value"] },
-        { title: "Decision factors", tone: "bluff", items: ["Dead money ≈ 10.5BB before antes", "K/Q blockers help fold equity", "ICM can materially tighten the shove"] }
-      ],
-      conclusion: "Without meaningful ICM, shove > fold. Calling only 7BB is strategically awkward because the Button retains position and can reshove; the clean default is isolation all-in.",
-      missing: ["Antes", "Tournament payouts", "BTN opening tendency", "BTN stack"]
-    };
-  }
-  return {
-    score: 65,
-    verdict: "The spot is saved, but this beta has limited coverage",
-    confidence: "Low",
-    explanation: "The structured action sequence is now captured correctly. A reliable recommendation for this exact configuration still requires either a matching reviewed template or a solver calculation.",
-    columns: [
-      { title: "Strong range", tone: "value", items: ["Premium made hands", "High-equity continues", "Position-dependent value"] },
-      { title: "Medium range", tone: "draw", items: ["Suited broadways", "Pairs and strong draws", "Pot-odds-dependent calls"] },
-      { title: "Weak range", tone: "bluff", items: ["Blocker candidates", "Hands benefiting from fold equity", "Population-dependent actions"] }
-    ],
-    conclusion: "Use the output as a range-thinking checklist, not a GTO answer.",
-    missing: ["Exact action sizes", "Antes", "Player tendencies", "Payout pressure"]
-  };
+  return analyzeHand(form);
 }
 
 export default function HandLab() {
@@ -106,9 +74,9 @@ export default function HandLab() {
           <p>Select exact cards and add every player involved in a multiway pot.</p>
         </div>
         <div className="data-badge">
-          <span>EXPERT-CURATED</span>
-          <b>Structured analysis</b>
-          <small>Not a live solver output</small>
+          <span>POKERBENCH + CHART</span>
+          <b>Range-weighted mix</b>
+          <small>Argmax frequencies, not a live solve</small>
         </div>
       </div>
       <div className="hand-lab-grid">
@@ -270,7 +238,7 @@ export default function HandLab() {
           )}
         </section>
       </div>
-      <p className="disclaimer">Hand Lab uses reviewed poker heuristics rather than a solver. Tournament ICM, antes and player ranges can change the recommendation materially.</p>
+      <p className="disclaimer">Hand Lab blends hierarchical PokerBench GTO labels with a 6-max chart prior. Short stacks, tournament ICM, antes and exact sizings can change the recommendation.</p>
     </div>
   );
 }

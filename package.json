@@ -4,7 +4,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "build:spots": "python3 scripts/build-pokerbench-spots.py",
+    "build:mix": "python3 scripts/build-bench-mix.py"
   },
   "dependencies": {
     "lucide-react": "^0.525.0",

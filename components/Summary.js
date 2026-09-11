@@ -1,14 +1,28 @@
 "use client";
 
 import { ChevronRight, RotateCcw, Trophy } from "lucide-react";
-import { SPOTS, pct } from "@/lib/spots";
+import { pct, safeSpot } from "@/lib/spots";
+
+function gradeText(grade) {
+  if (grade === "optimal") return "Solver action";
+  if (grade === "close") return "Close sizing";
+  return "Missed";
+}
 
 export default function Summary({ results, mode, start, reviewQueue, goHome }) {
   const good = results.filter((r) => r.ok).length;
   const xp = results.reduce((s, r) => s + (r.points || 0), 0);
   const avg = results.length ? Math.round(results.reduce((s, r) => s + (r.seconds || 0), 0) / results.length) : 0;
-  const ev = results.reduce((s, r) => s + (r.evLoss || 0), 0);
-  const strongest = results.length ? SPOTS[results.slice().sort((a, b) => (b.frequency || 0) - (a.frequency || 0))[0].hand].level : "—";
+  const exact = results.filter((r) => r.grade === "optimal").length;
+  const streetScores = {};
+  for (const r of results) {
+    const street = safeSpot(r.hand).level;
+    if (!streetScores[street]) streetScores[street] = { ok: 0, n: 0 };
+    streetScores[street].n += 1;
+    if (r.ok) streetScores[street].ok += 1;
+  }
+  const strongest =
+    Object.entries(streetScores).sort((a, b) => b[1].ok / b[1].n - a[1].ok / a[1].n)[0]?.[0] || "—";
 
   return (
     <div className="page summary-page">
@@ -29,7 +43,7 @@ export default function Summary({ results, mode, start, reviewQueue, goHome }) {
           <small>QUALITY SCORE</small>
           <b>{pct(good, results.length)}%</b>
           <span>
-            {good} of {results.length} profitable choices
+            {good} of {results.length} solver matches
           </span>
         </article>
         <article>
@@ -38,14 +52,14 @@ export default function Summary({ results, mode, start, reviewQueue, goHome }) {
           <span>per decision</span>
         </article>
         <article>
-          <small>EV LOST</small>
-          <b>{ev.toFixed(2)}</b>
-          <span>big blinds across this session</span>
+          <small>EXACT MATCHES</small>
+          <b>{exact}</b>
+          <span>identical to the PokerBench label</span>
         </article>
         <article>
           <small>STRONGEST AREA</small>
           <b className="text-stat">{strongest}</b>
-          <span>based on choice frequency</span>
+          <span>best street this session</span>
         </article>
       </div>
       <div className="summary-breakdown">
@@ -54,31 +68,35 @@ export default function Summary({ results, mode, start, reviewQueue, goHome }) {
             <small>HAND-BY-HAND</small>
             <h2>Your five-decision replay</h2>
           </div>
-          <span>Optimal · Mixed · Review</span>
+          <span>Optimal · Close · Review</span>
         </div>
-        {results.map((r, i) => (
-          <div className="summary-row" key={r.id}>
-            <span className={`grade-dot ${r.grade || (r.ok ? "optimal" : "review")}`}>{i + 1}</span>
-            <div>
-              <b>{SPOTS[r.hand].spot}</b>
-              <small>
-                {SPOTS[r.hand].cards.join(" ")} · chose {r.choice}
-              </small>
+        {results.map((r, i) => {
+          const spot = safeSpot(r.hand);
+          const grade = r.grade || (r.ok ? "optimal" : "review");
+          return (
+            <div className="summary-row" key={r.id}>
+              <span className={`grade-dot ${grade === "close" ? "mixed" : grade}`}>{i + 1}</span>
+              <div>
+                <b>{spot.spot}</b>
+                <small>
+                  {spot.cards.join(" ")} · chose {r.choice}
+                </small>
+              </div>
+              <span>{gradeText(grade)}</span>
+              <span>solver {spot.a}</span>
+              <b>+{r.points || 0} XP</b>
             </div>
-            <span>{r.frequency ?? SPOTS[r.hand].mix[r.choice] ?? 0}% frequency</span>
-            <span>{(r.evLoss || 0).toFixed(2)} BB loss</span>
-            <b>+{r.points || 0} XP</b>
-          </div>
-        ))}
+          );
+        })}
       </div>
       <div className="summary-actions">
         <button className="ghost" onClick={goHome}>
           Back home
         </button>
-        <button className="ghost" disabled={!reviewQueue.length} onClick={() => start(0, "review", reviewQueue)}>
+        <button className="ghost" disabled={!reviewQueue.length} onClick={() => start("all", "review", reviewQueue)}>
           <RotateCcw /> Review weak spots
         </button>
-        <button className="cta" onClick={() => start(Math.floor(Math.random() * SPOTS.length), mode)}>
+        <button className="cta" onClick={() => start("all", mode)}>
           Play another session <ChevronRight />
         </button>
       </div>
