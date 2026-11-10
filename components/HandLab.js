@@ -195,7 +195,7 @@ export default function HandLab() {
           {result ? (
             <>
               <div className="result-score">
-                <div className="score-ring" style={{ background: `conic-gradient(var(--cyan) 0 ${result.score}%,#25333d 0)` }}>
+                <div className="score-ring" style={{ background: `conic-gradient(var(--accent) 0 ${result.score}%,var(--line) 0)` }}>
                   <span>
                     <b>{result.score}</b>/100
                   </span>

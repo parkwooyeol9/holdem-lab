@@ -50,7 +50,7 @@ export default function Progress({ history, correct, filter, setFilter, reset })
       </div>
       <div className="chart-grid">
         <article className="accuracy-orbit">
-          <div className="big-donut" style={{ background: `conic-gradient(var(--cyan) 0 ${pct(correct, history.length)}%,#1e2b35 0)` }}>
+          <div className="big-donut" style={{ background: `conic-gradient(var(--accent) 0 ${pct(correct, history.length)}%,var(--line) 0)` }}>
             <span>
               <b>{pct(correct, history.length)}%</b>
               {t("progress.accuracyWord")}

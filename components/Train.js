@@ -2,53 +2,23 @@
 
 import { useState } from "react";
 import { ChevronRight, GraduationCap, RotateCcw, Trophy, Zap } from "lucide-react";
-import { DRILL_POOLS, MODULES, SOURCE, SPOTS, indicesFor, pct } from "@/lib/spots";
+import { DRILL_POOLS, MODULES, MODULE_TAGS, SOURCE, SPOTS, indicesFor, pct } from "@/lib/spots";
 import { useT } from "@/lib/i18n";
 
-export default function Home({ start, answered, correct, reviewQueue, openLounge }) {
+// Training hub: pick a filter and a mode, or enter by street.
+export default function Train({ start, answered, correct, reviewQueue }) {
   const { t } = useT();
   const [pool, setPool] = useState("all");
 
   return (
-    <div className="page home">
-      <section className="welcome">
-        <div>
-          <span className="tag">{t("home.tag")}</span>
-          <h1>
-            {t("home.title1")}
-            <br />
-            <em>{t("home.title2")}</em>
-          </h1>
-          <p>
-            {t("home.blurb", { name: SOURCE.name, preflop: SOURCE.preflop, postflop: SOURCE.postflop })}
-          </p>
-          <button className="cta" onClick={() => start(pool)}>
-            {t("home.cta")} <ChevronRight />
-          </button>
-        </div>
-        <div className="orbit">
-          <div className="card-mini c1">
-            A<span>♠</span>
-          </div>
-          <div className="brain">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z" />
-              <path d="M9 13a4.5 4.5 0 0 0 3-4" />
-              <path d="M12 13h4" />
-              <path d="M12 18h6a2 2 0 0 1 2 2v1" />
-              <path d="M12 8h8" />
-            </svg>
-          </div>
-          <div className="card-mini c2 red">
-            K<span>♥</span>
-          </div>
-          <i />
-          <b>
-            {SPOTS.length.toLocaleString()}
-            <small>{t("home.spots")}</small>
-          </b>
-        </div>
-      </section>
+    <div className="page train">
+      <div className="page-title">
+        <span className="tag">{t("home.tag")}</span>
+        <h1>
+          {t("home.title1")} <em>{t("home.title2")}</em>
+        </h1>
+        <p>{t("home.blurb", { name: SOURCE.name, preflop: SOURCE.preflop, postflop: SOURCE.postflop })}</p>
+      </div>
 
       <section className="mode-picker">
         <div className="mode-intro">
@@ -101,15 +71,6 @@ export default function Home({ start, answered, correct, reviewQueue, openLounge
         </button>
       </section>
 
-      <button className="lounge-banner" onClick={openLounge}>
-        <div>
-          <small>{t("home.loungeTag")}</small>
-          <b>{t("home.loungeTitle")}</b>
-          <span>{t("home.loungeBody")}</span>
-        </div>
-        <em>{t("home.loungeCta")}</em>
-      </button>
-
       <section className="quick">
         <div>
           <small>{t("home.accuracy")}</small>
@@ -144,18 +105,22 @@ export default function Home({ start, answered, correct, reviewQueue, openLounge
         </div>
         <span>{t("home.pathCount", { n: SPOTS.length.toLocaleString() })}</span>
       </div>
-      <div className="module-grid">
+      <div className="course-list">
         {MODULES.map((mod, i) => (
           <article key={mod.id}>
-            <span>0{i + 1}</span>
-            <div className="module-icon">{i === 0 ? "♠" : i === 1 ? "◇" : i === 2 ? "♜" : "▲"}</div>
-            <small>
-              {mod.count.toLocaleString()} {t("home.spotsLabel")}
-            </small>
-            <h3>{t(`modules.${mod.id}`)}</h3>
-            <p>{t(`modules.${mod.id}Blurb`)}</p>
+            <span className="num">0{i + 1}</span>
+            <div>
+              <small>{t("learn.spots", { n: mod.count.toLocaleString() })}</small>
+              <h2>{t(`modules.${mod.id}`)}</h2>
+              <p>{t(`modules.${mod.id}Blurb`)}</p>
+            </div>
+            <div className="skill-tags">
+              {(MODULE_TAGS[mod.id] || []).map((tag) => (
+                <span key={tag}>{t(`modules.${tag}`)}</span>
+              ))}
+            </div>
             <button onClick={() => start(mod.id)}>
-              {t("home.openModule")} <ChevronRight />
+              {t("learn.start")} <ChevronRight />
             </button>
           </article>
         ))}

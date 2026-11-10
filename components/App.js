@@ -2,28 +2,13 @@
 
 import { useEffect, useLayoutEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import {
-  BrainCircuit,
-  ChartNoAxesColumnIncreasing,
-  ChevronRight,
-  CircleQuestionMark,
-  Flame,
-  Gauge,
-  GraduationCap,
-  House,
-  Microscope,
-  Settings,
-  Spade,
-  Trophy,
-  Users,
-  Zap
-} from "lucide-react";
+import { BrainCircuit, ChartNoAxesColumnIncreasing, CircleQuestionMark, Flame, FlaskConical, Gauge, Microscope, Trophy, Users, Zap } from "lucide-react";
 import { SPOTS, gradeChoice, indicesFor, sampleIndices, safeSpot } from "@/lib/spots";
 import { FACES } from "@/lib/characters";
 import { pageFromPath, pathFromPage } from "@/lib/routes";
 import { useT } from "@/lib/i18n";
-import Home from "./Home";
-import Learn from "./Learn";
+import ResearchLab from "./lab/ResearchLab";
+import Train from "./Train";
 import Practice from "./Practice";
 import HandLab from "./HandLab";
 import Progress from "./Progress";
@@ -32,14 +17,15 @@ import Lounge from "./Lounge";
 import Live from "./Live";
 
 const NAV = [
-  ["home", House],
-  ["learn", GraduationCap],
-  ["practice", BrainCircuit],
+  ["home", FlaskConical],
+  ["train", BrainCircuit],
   ["handlab", Microscope],
   ["live", Gauge],
   ["progress", ChartNoAxesColumnIncreasing],
   ["lounge", Users]
 ];
+// Drill and summary screens belong to the training section.
+const NAV_OWNER = { practice: "train", summary: "train" };
 
 export default function App() {
   const pathname = usePathname();
@@ -63,12 +49,9 @@ export default function App() {
   const [face, setFace] = useState("😎");
   const [modal, setModal] = useState(null);
   const [nickReady, setNickReady] = useState(false);
-  const [navOpen, setNavOpen] = useState(false);
-  const liveFocus = page === "live";
 
   const go = (id, query) => {
     router.push(pathFromPage(id, query));
-    setNavOpen(false);
   };
 
   useEffect(() => {
@@ -92,9 +75,6 @@ export default function App() {
       setModal("nick");
     }
   }, [nickReady, nick, page]);
-  useEffect(() => {
-    setNavOpen(false);
-  }, [page]);
 
   const item = safeSpot(hand);
   const sessionLen = reviewSet?.length || 5;
@@ -142,95 +122,51 @@ export default function App() {
     setModal(null);
   };
 
-  const crumb = t(`nav.${page === "practice" ? "practice" : page}`) || page;
+  const section = NAV_OWNER[page] || page;
+  const paper = page === "home";
 
   return (
-    <div className={"app" + (liveFocus ? " live-focus" : "") + (navOpen ? " nav-open" : "")}>
-      {liveFocus && navOpen && <div className="live-nav-scrim" onClick={() => setNavOpen(false)} />}
-      <aside>
-        <div className="logo" onClick={() => go("home")}>
-          <span>
-            <Spade />
-          </span>
-          <b>
-            Holdem <em>Lab</em>
-          </b>
-        </div>
-        <nav>
-          {NAV.map(([id, Icon]) => (
-            <button
-              key={id}
-              className={page === id ? "on" : ""}
-              onClick={() => {
-                if (id === "practice") start(pool || "all", mode === "learn" ? "drill" : mode);
-                else go(id);
-              }}
-            >
-              <Icon /> {t(`nav.${id}`)}
-            </button>
-          ))}
-        </nav>
-        <div className="side-bottom">
-          <a className="trip-back" href="/">
-            <span aria-hidden="true">♠</span>
-            <div>
-              <b>VietnamPokerTrip</b>
-              <small>{lang === "en" ? "Back to the Hanoi trip guide" : "하노이 포커 여행 가이드로"}</small>
-            </div>
-          </a>
-          <button onClick={() => setModal("help")}>
-            <CircleQuestionMark /> {t("chrome.how")}
-          </button>
-          <button
-            onClick={() => {
-              setNickDraft(nick);
-              setModal("settings");
-            }}
-          >
-            <Settings /> {t("chrome.settings")}
-          </button>
-          <div className="profile">
-            <span className="profile-face">{face}</span>
-            <div>
-              <b>{nick || t("chrome.player")}</b>
-              <small>{t("chrome.level", { n: Math.floor(xp / 400) + 1 })} · {xp} XP</small>
-            </div>
-          </div>
-        </div>
-      </aside>
-      <main>
-        <header>
-          <button
-            className="mobile-logo"
-            onClick={() => {
-              if (liveFocus) setNavOpen((open) => !open);
-              else go("home");
-            }}
-          >
-            <Spade />
-          </button>
-          <div className="crumb">
-            {t("chrome.crumb")} <ChevronRight /> <b>{crumb}</b>
-          </div>
-          <div className="top-stats">
-            <a className="trip-link" href="/" title="VietnamPokerTrip">
-              ♠ <em>VietnamPokerTrip</em>
-            </a>
-            <span>
+    <>
+      <div className="lab-nav">
+        <div className="wrap lab-nav-inner">
+          <nav className="lab-nav-links" aria-label="연구소 메뉴">
+            {NAV.map(([id, Icon]) => (
+              <button key={id} className={section === id ? "on" : ""} aria-current={section === id ? "page" : undefined} onClick={() => go(id)}>
+                <Icon /> {t(`nav.${id}`)}
+              </button>
+            ))}
+          </nav>
+          <div className="lab-nav-stats">
+            <span className="wide">
               <Flame /> {t("chrome.streak", { n: streak })}
             </span>
-            <span className={combo > 1 ? "combo-live" : ""}>
+            <span className={"wide" + (combo > 1 ? " combo-live" : "")}>
               <Zap /> {t("chrome.combo", { n: Math.max(1, combo) })}
             </span>
             <span>
               <Trophy /> {xp} XP
             </span>
           </div>
-        </header>
+          <button className="lab-nav-help" onClick={() => setModal("help")} aria-label={t("chrome.how")} title={t("chrome.how")}>
+            <CircleQuestionMark />
+          </button>
+          <button
+            className="lab-nav-me"
+            title={t("chrome.settings")}
+            onClick={() => {
+              setNickDraft(nick);
+              setModal("settings");
+            }}
+          >
+            <i>{face}</i> {nick || t("chrome.player")}
+          </button>
+        </div>
+      </div>
+      <div className={paper ? "guide" : "lab lab-stage"} id="main">
         {page === "home" && (
-          <Home start={start} answered={answered} correct={correct} reviewQueue={reviewQueue} openLounge={() => go("lounge")} />
+          <ResearchLab start={start} go={go} answered={answered} correct={correct} reviewQueue={reviewQueue} />
         )}
-        {page === "learn" && <Learn start={start} />}
+        {page === "train" && <Train start={start} answered={answered} correct={correct} reviewQueue={reviewQueue} />}
         {page === "practice" && reviewSet?.length ? (
           <Practice
             item={item}
@@ -292,7 +228,7 @@ export default function App() {
           <Progress history={history} correct={correct} filter={filter} setFilter={setFilter} reset={() => { setHistory([]); setAnswer(null); }} />
         )}
         {page === "summary" && (
-          <Summary results={sessionResults} mode={mode} start={start} reviewQueue={reviewQueue} goHome={() => go("home")} />
+          <Summary results={sessionResults} mode={mode} start={start} reviewQueue={reviewQueue} goHome={() => go("train")} />
         )}
         {page === "lounge" && (
           <Lounge
@@ -304,9 +240,10 @@ export default function App() {
             }}
           />
         )}
-      </main>
+      </div>
 
       {modal && (
+        <div className="lab">
         <div
           className="modal-scrim"
           onClick={() => {
@@ -382,7 +319,8 @@ export default function App() {
             )}
           </div>
         </div>
+        </div>
       )}
-    </div>
+    </>
   );
 }

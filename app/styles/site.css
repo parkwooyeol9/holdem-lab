@@ -1,0 +1,67 @@
+/* Shared shell: tokens, header, primary nav, 연구소 sub-nav, footer. */
+:root{color-scheme:light;--paper:#f5f1e8;--ink:#1d2923;--muted:#555d53;--forest:#142520;--dark:#0e1d19;--gold:#e6b977;--line:#d9d2c5;--rust:#a44b34;--white:#fcf9f2;--green:#2e503d;--green-soft:#e2e9df;--max:1120px;--sans:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;--display:Georgia,"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",serif;font-family:var(--sans);scroll-padding-top:84px}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:flex;flex-direction:column;background:var(--paper);color:var(--ink);font-size:15px;line-height:1.65}
+.wrap{width:min(var(--max),calc(100% - 64px));margin-inline:auto}
+.skip{position:absolute;top:-100px;background:var(--white);color:var(--ink);padding:10px;z-index:99}
+.skip:focus{top:8px;left:8px}
+
+.site-header{position:sticky;top:0;z-index:20;background:var(--forest);color:#f8f1e2;border-bottom:1px solid #ffffff1f}
+.site-bar{display:flex;align-items:stretch;justify-content:space-between;gap:24px;min-height:62px}
+.site-brand{display:flex;align-items:center;color:inherit;text-decoration:none;font-family:Georgia,serif;letter-spacing:-.02em;font-size:21px;font-weight:bold;white-space:nowrap}
+.site-brand span{color:var(--gold);margin-right:8px}
+.site-nav{display:flex;align-items:stretch;gap:2px}
+.site-nav a{display:flex;align-items:center;gap:8px;padding:3px 13px 0;border-bottom:3px solid transparent;color:#d5d6c8;text-decoration:none;font-size:14px;font-weight:720;white-space:nowrap}
+.site-nav a span{font:bold 12px Georgia,serif;color:#c9a06a}
+.site-nav a:hover{background:#ffffff0f;color:#fff}
+.site-nav a[aria-current]{color:#fff;border-bottom-color:var(--gold)}
+.site-nav a:focus-visible,.site-brand:focus-visible,.lab-nav button:focus-visible{outline:2px solid var(--gold);outline-offset:-3px}
+
+.lab-nav{background:var(--dark);color:#d5d6c8;border-bottom:1px solid #ffffff14}
+.lab-nav-inner{display:flex;align-items:center;gap:16px;min-height:48px}
+.lab-nav-links{display:flex;flex:1;gap:2px;min-width:0;overflow-x:auto;scrollbar-width:none}
+.lab-nav-links::-webkit-scrollbar{display:none}
+.lab-nav button{display:inline-flex;align-items:center;gap:7px;border:0;background:none;color:inherit;font:700 13px var(--sans);cursor:pointer;white-space:nowrap}
+.lab-nav-links button{padding:8px 11px;border-radius:3px}
+.lab-nav-links button svg{width:15px;height:15px;opacity:.75}
+.lab-nav-links button:hover{background:#ffffff0f;color:#fff}
+.lab-nav-links button.on{background:#e6b9771f;color:var(--gold)}
+.lab-nav-stats{display:flex;align-items:center;gap:14px;font-size:12px;color:#c9c7b6;white-space:nowrap}
+.lab-nav-stats span{display:inline-flex;align-items:center;gap:5px}
+.lab-nav-stats svg{width:14px;height:14px;color:var(--gold)}
+.lab-nav-me{padding:4px 10px 4px 4px;border:1px solid #ffffff26 !important;border-radius:999px}
+.lab-nav-me:hover{border-color:var(--gold) !important}
+.lab-nav-me i{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:#ffffff14;font-style:normal;font-size:15px}
+.lab-nav-help{padding:6px}
+.lab-nav-help svg{width:17px;height:17px}
+
+.site-footer{margin-top:auto;background:var(--forest);color:#efebdf}
+.site-footer-inner{display:flex;align-items:center;justify-content:space-between;gap:12px 28px;flex-wrap:wrap;padding-block:22px}
+.site-footer nav{display:flex;gap:18px;font-size:13px;font-weight:700}
+.site-footer nav a{color:#d5d6c8;text-decoration:none}
+.site-footer nav a:hover{color:var(--gold)}
+.site-footer p{margin:0;font-size:12px;color:#b9bbab}
+
+@media(max-width:860px){
+  .site-bar{flex-direction:column;gap:0}
+  .site-brand{height:48px;font-size:19px}
+  .site-nav{margin-inline:-6px;overflow-x:auto;scrollbar-width:none;border-top:1px solid #ffffff14}
+  .site-nav::-webkit-scrollbar{display:none}
+  .site-nav a{flex:1;justify-content:center;padding:9px 6px 7px;font-size:13px}
+  :root{scroll-padding-top:104px}
+}
+@media(max-width:760px){
+  .wrap{width:calc(100% - 34px)}
+  .lab-nav-stats .wide{display:none}
+  .site-footer p{width:100%}
+}
+@media(max-width:420px){
+  .site-nav a span{display:none}
+  .lab-nav-stats{display:none}
+}
+@media(max-width:560px){
+  .lab-nav-inner{gap:6px}
+  .lab-nav-me{padding:3px !important;font-size:0 !important;gap:0 !important}
+  .lab-nav-links button{padding:8px 9px}
+  .lab-nav-links button svg{display:none}
+}
