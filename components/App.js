@@ -171,6 +171,13 @@ export default function App() {
           ))}
         </nav>
         <div className="side-bottom">
+          <a className="trip-back" href="/">
+            <span aria-hidden="true">♠</span>
+            <div>
+              <b>VietnamPokerTrip</b>
+              <small>{lang === "en" ? "Back to the Hanoi trip guide" : "하노이 포커 여행 가이드로"}</small>
+            </div>
+          </a>
           <button onClick={() => setModal("help")}>
             <CircleQuestionMark /> {t("chrome.how")}
           </button>
@@ -206,6 +213,9 @@ export default function App() {
             {t("chrome.crumb")} <ChevronRight /> <b>{crumb}</b>
           </div>
           <div className="top-stats">
+            <a className="trip-link" href="/" title="VietnamPokerTrip">
+              ♠ <em>VietnamPokerTrip</em>
+            </a>
             <span>
               <Flame /> {t("chrome.streak", { n: streak })}
             </span>
