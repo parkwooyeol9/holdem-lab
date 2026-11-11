@@ -73,6 +73,7 @@ export default function Strategy() {
             다른가?
           </p>
           <Ext href="https://blog.gtowizard.com/icm-basics/">ICM과 리스크 프리미엄 ↗</Ext>
+          <LabLink href="/lab/tournament">유효 스택 계산기에 넣어 보기</LabLink>
           <LabLink href="/lab/hand-lab">핸드랩에서 재구성</LabLink>
         </article>
         <article>

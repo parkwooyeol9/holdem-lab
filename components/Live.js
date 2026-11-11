@@ -96,7 +96,7 @@ function Slot({ card, label, onClick, onClear, compact }) {
 }
 
 export default function Live() {
-  const { t } = useT();
+  const { t, lang } = useT();
   const [seats, setSeats] = useState(emptySeats);
   const [hand, setHand] = useState(emptyHand);
   const [picker, setPicker] = useState(null);
@@ -460,6 +460,11 @@ export default function Live() {
         <small>{t("live.guide")}</small>
         <h2>{t("live.guideTitle")}</h2>
         <p>{t("live.guideBody")}</p>
+        <p>
+          <a className="live-guide-link" href="/lab/reads">
+            {lang === "en" ? "Research note: reading opponents →" : "연구 노트: 유형별 대응 방향과 관찰 메모 →"}
+          </a>
+        </p>
         <div className="live-guide-wrap">
           <table>
             <thead>

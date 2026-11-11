@@ -8,6 +8,10 @@ import { FACES } from "@/lib/characters";
 import { pageFromPath, pathFromPage } from "@/lib/routes";
 import { useT } from "@/lib/i18n";
 import ResearchLab from "./lab/ResearchLab";
+import Tournament from "./lab/Tournament";
+import Reads from "./lab/Reads";
+import Continuation from "./lab/Continuation";
+import Library from "./lab/Library";
 import Train from "./Train";
 import Practice from "./Practice";
 import HandLab from "./HandLab";
@@ -25,7 +29,7 @@ const NAV = [
   ["lounge", Users]
 ];
 // Drill and summary screens belong to the training section.
-const NAV_OWNER = { practice: "train", summary: "train" };
+const NAV_OWNER = { practice: "train", summary: "train", tournament: "home", reads: "home", continuation: "home", library: "home" };
 
 export default function App() {
   const pathname = usePathname();
@@ -123,7 +127,7 @@ export default function App() {
   };
 
   const section = NAV_OWNER[page] || page;
-  const paper = page === "home";
+  const paper = section === "home";
 
   return (
     <>
@@ -166,6 +170,10 @@ export default function App() {
         {page === "home" && (
           <ResearchLab start={start} go={go} answered={answered} correct={correct} reviewQueue={reviewQueue} />
         )}
+        {page === "tournament" && <Tournament go={go} start={start} />}
+        {page === "reads" && <Reads go={go} />}
+        {page === "continuation" && <Continuation go={go} />}
+        {page === "library" && <Library go={go} />}
         {page === "train" && <Train start={start} answered={answered} correct={correct} reviewQueue={reviewQueue} />}
         {page === "practice" && reviewSet?.length ? (
           <Practice

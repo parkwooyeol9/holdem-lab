@@ -2,6 +2,7 @@
 
 import { BENCH_META, BENCH_SIZES, labelSharesByOpener } from "@/lib/bench";
 import { MODULES, SOURCE, SPOTS, pct } from "@/lib/spots";
+import NoteNav from "./NoteNav";
 
 const OPENERS = ["UTG", "HJ", "CO", "BTN", "SB"];
 const BB_ROWS = labelSharesByOpener("vsOpen", "BB", OPENERS);
@@ -17,6 +18,12 @@ const BENCH = [
   ["btn-steal", "CO/BTN/SB 스틸"],
   ["vs-open", "오픈 상대"],
   ["3bet", "3벳 팟"]
+];
+
+const QUESTIONS = [
+  ["tournament", "평균 스택보다 중요한 것", "나 30BB, 평균 40BB. 그런데 상대가 12BB라면?", "유효 스택 계산기"],
+  ["tournament", "3벳을 받았을 때", "같은 AQs라도 포지션과 상대의 범위가 다릅니다.", "30BB 대응 실험실"],
+  ["reads", "표정에서 행동으로", "몸짓 하나보다 평소 패턴의 변화가 먼저입니다.", "상대 읽기 노트"]
 ];
 
 const TOOLS = [
@@ -44,17 +51,56 @@ export default function ResearchLab({ start, go, answered, correct, reviewQueue 
   return (
     <main className="wrap">
       <section className="panel">
+        <NoteNav page="home" go={go} />
         <header className="section-head">
           <div>
             <p className="kicker">03 / HOLDEM RESEARCH LAB</p>
             <h2>홀덤 연구소</h2>
-            <p>전략 노트의 가설을 솔버 데이터로 확인하고, 다섯 손씩 훈련하고, 경기가 끝난 밤에 복기합니다.</p>
+            <p>좋은 판단에는 근거가 있습니다. 영문 포커 연구를 한국어로 읽고, 솔버 데이터로 확인하고, 다섯 손씩 훈련합니다.</p>
           </div>
           <button className="outline" onClick={() => go("train")}>
             훈련 시작 →
           </button>
         </header>
 
+        <div className="q-grid">
+          {QUESTIONS.map(([page, title, question, label], i) => (
+            <button key={title} onClick={() => go(page)}>
+              <span className="place-number">0{i + 1}</span>
+              <h4>{title}</h4>
+              <p>{question}</p>
+              <em>{label} →</em>
+            </button>
+          ))}
+        </div>
+
+        <div className="feature idea">
+          <span className="feature-mark" aria-hidden="true">
+            ♠
+          </span>
+          <div>
+            <p className="kicker">ORIGINAL RESEARCH IDEA</p>
+            <h3>플랍의 콜은 미래의 선택권을 산다.</h3>
+            <p>
+              같은 2칩짜리 플랍 콜이 턴·리버에서 접을 수 있으면 <b>+1.09칩</b>, 끝까지 콜해야 하면 <b>−4.43칩</b>입니다. 옵션 트리의 역산을 포커에 옮긴 교육용 사례이고,
+              확률은 합성 가정입니다.
+            </p>
+            <div className="bench-actions">
+              <button onClick={() => go("continuation")}>선택권을 켜고 꺼 보기</button>
+              <button className="ghost" onClick={() => go("library")}>
+                영문 문헌 11편
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="heading-row">
+          <div>
+            <p className="kicker">DATA BENCH</p>
+            <h3>솔버 데이터로 확인하고 훈련하기</h3>
+            <p className="muted">위 노트는 토너먼트 사고 훈련이고, 아래는 100bb 캐시 솔버 데이터입니다. 둘의 전제가 다르다는 점을 기억하세요.</p>
+          </div>
+        </div>
         <div className="facts">
           <div>
             <small>기준 데이터</small>

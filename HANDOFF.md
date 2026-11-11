@@ -15,6 +15,7 @@
 | `/` | 01 QPC · 여행 (히어로 포함) |
 | `/strategy` | 02 포커 전략 노트 |
 | `/lab` | 03 연구소 — 연구 노트·데이터 노트·도구·루틴 (종이 톤) |
+| `/lab/tournament` `/lab/reads` `/lab/continuation` `/lab/library` | 연구 노트 (종이 톤): 유효 스택·30BB 3벳, 상대 읽기, 계속 참여 가치, 문헌. 원본은 poker-research-lab 사이트 |
 | `/lab/train` `/lab/practice` `/lab/summary` | 훈련 허브(옛 홈+배우기 통합)·드릴·세션 요약 |
 | `/lab/hand-lab` `/lab/live` `/lab/progress` `/lab/lounge` | 연구소 도구 (포레스트 톤) |
 | `/culture` | 04 베트남 문화 |
@@ -35,6 +36,7 @@ components/
   site/SiteHeader.js SiteFooter.js
   trip/Travel.js Strategy.js Culture.js EventSelector.js LegacyHash.js
   lab/ResearchLab.js      연구소 랜딩 (/lab)
+  lab/Tournament.js Reads.js Continuation.js Library.js NoteNav.js   연구 노트 페이지와 공통 보조 메뉴
   Train.js                훈련 허브 (/lab/train)
   App.js                  연구소 쉘: 서브메뉴 + 상태. 랜딩은 .guide, 도구는 .lab으로 감쌈
 lib/sections.js           주메뉴 정의
@@ -62,6 +64,7 @@ lib/bench.js              BENCH_SIZES, labelSharesByOpener 추가 (연구소 데
 - [ ] `/strategy`, `/lab`, `/culture`가 같은 헤더로 열린다
 - [ ] `/#strategy` → `/strategy`, `/#lab` → `/lab`, `/#study` → `/strategy#study`
 - [ ] 경기 "담기" → 합계·원화, Cup+Classic이면 겹침 경고
+- [ ] `/lab/tournament` `/lab/reads` `/lab/continuation` `/lab/library` 연구 노트
 - [ ] `/learn`과 `/lab/learn` → `/lab/train`
 - [ ] 모바일에서 가로 스크롤 없음
 - [ ] `/lab/lounge` PeerJS 연결 (기존 기능)

@@ -624,3 +624,4 @@
 .combo-live{color:var(--gold)}
 @media(max-width:760px){.lab .page,.lab .lounge-page.party{width:calc(100% - 34px);padding-top:24px}}
 .lab .accuracy-orbit{flex-wrap:wrap}
+.lab .live-guide-link{color:var(--accent);font-size:13px;font-weight:700}
