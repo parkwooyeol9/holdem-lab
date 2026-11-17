@@ -136,6 +136,19 @@ export default function Tournament({ go, start }) {
           <Ext href="https://blog.gtowizard.com/how-icm-quietly-shapes-postflop-strategy-from-the-start/">ICM 영문 해설 ↗</Ext>
         </p>
 
+        <aside className="strip" aria-label="토너먼트 심화">
+          <span className="strip-mark" aria-hidden="true">
+            ♠
+          </span>
+          <div>
+            <p className="kicker">NEXT · TOURNAMENT DEPTH</p>
+            <p>평균 100BB부터 파이널테이블 8BB까지의 구간별 해설과, 55% 승률인데도 접어야 하는 이유를 계산하는 ICM 실험실로 이어집니다.</p>
+          </div>
+          <button className="strip-cta" onClick={() => go("depth")}>
+            토너먼트 심화 →
+          </button>
+        </aside>
+
         <div className="heading-row" id="threebet">
           <div>
             <p className="kicker">DECISION LAB · 30BB</p>

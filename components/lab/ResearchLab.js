@@ -26,6 +26,12 @@ const QUESTIONS = [
   ["reads", "표정에서 행동으로", "몸짓 하나보다 평소 패턴의 변화가 먼저입니다.", "상대 읽기 노트"]
 ];
 
+const NEW_NOTES = [
+  ["depth", "토너먼트 심화", "100BB → 파이널테이블 8BB, ICM 실험실"],
+  ["rng", "RNG 연구", "난수의 수학, 깨지는 조건, 사이트 공개자료 비교"],
+  ["world", "세계 연구 지도", "2015–2026 선별 논문 13편과 신뢰도 읽는 법"]
+];
+
 const TOOLS = [
   ["train", "훈련", "필터와 모드를 골라 다섯 손. 틀리거나 15초 넘게 걸린 손은 복습 큐로 갑니다."],
   ["handlab", "핸드랩", "카드·포지션·액션을 넣어 실전 핸드를 재구성하고 레인지로 복기합니다."],
@@ -74,6 +80,16 @@ export default function ResearchLab({ start, go, answered, correct, reviewQueue 
           ))}
         </div>
 
+        <div className="new-row">
+          {NEW_NOTES.map(([page, title, body]) => (
+            <button key={page} onClick={() => go(page)}>
+              <span className="chip">NEW</span>
+              <b>{title}</b>
+              <small>{body}</small>
+            </button>
+          ))}
+        </div>
+
         <div className="feature idea">
           <span className="feature-mark" aria-hidden="true">
             ♠
@@ -88,7 +104,7 @@ export default function ResearchLab({ start, go, answered, correct, reviewQueue 
             <div className="bench-actions">
               <button onClick={() => go("continuation")}>선택권을 켜고 꺼 보기</button>
               <button className="ghost" onClick={() => go("library")}>
-                영문 문헌 11편
+                기초 문헌 11편
               </button>
             </div>
           </div>

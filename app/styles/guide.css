@@ -229,3 +229,39 @@
   .guide .feature.decision{flex-direction:column}
   .guide .price{min-width:0;align-self:stretch}
 }
+
+/* ── Research edition 03: depth, RNG, world map ─────────────────── */
+.guide .strip button.strip-cta{font-family:inherit;cursor:pointer}
+.guide .new-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}
+.guide .new-row button{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;align-items:center;padding:12px 16px;text-align:left;background:var(--green-soft);border:1px solid #c1cbbd;border-radius:4px;color:inherit;font-family:inherit;cursor:pointer}
+.guide .new-row button:hover{border-color:var(--green)}
+.guide .new-row b{font-size:15px}
+.guide .new-row small{grid-column:1/-1;font-size:12px;color:var(--muted)}
+.guide .depth-seg{margin:18px 0 14px}
+.guide .aside-notes{max-width:400px;padding-left:22px;border-left:1px solid #ffffff26}
+.guide .aside-notes p{font-size:14px}
+.guide .aside-notes .calc-sub{margin-top:10px;font-size:13px;color:var(--gold)}
+.guide .feature.decision .aside-notes{align-self:stretch}
+.guide table.mini td+td{padding-left:14px;color:var(--muted);font-weight:500}
+.guide .src-list{display:flex;flex-wrap:wrap;gap:6px 18px}
+.guide .src-list a{margin-left:0}
+.guide table.wide{min-width:900px}
+.guide .bench-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.guide .histo{display:grid;grid-template-columns:repeat(10,1fr);gap:4px;height:120px;align-items:end}
+.guide .histo>div{display:flex;flex-direction:column;justify-content:flex-end;height:100%}
+.guide .histo i{display:block;min-height:2px;background:#b3ad9e;border-radius:2px 2px 0 0}
+.guide .histo .raise i{background:var(--rust)}
+.guide .histo small{display:block;margin-top:3px;text-align:center;font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums}
+.guide .calc-result b{color:var(--gold)}
+.guide .paper-more{margin:8px 0;font-size:13px}
+.guide .paper-more summary{cursor:pointer;font-weight:700;color:#335541}
+.guide .paper-more p{margin-top:6px}
+.guide .controls input[type=search]{font-size:14px}
+@media(max-width:760px){
+  .guide .new-row{grid-template-columns:1fr}
+  .guide .aside-notes{max-width:none;padding:14px 0 0;border-left:0;border-top:1px solid #ffffff26}
+}
+.guide table.notes td,.guide table.wide td{white-space:normal;width:auto}
+.guide table.notes tbody th{width:20%}
+.guide table.wide tbody th{width:12%;white-space:nowrap}
+.guide table.wide td{width:22%}

@@ -3,9 +3,12 @@
 export const NOTES = [
   ["home", "연구 홈"],
   ["tournament", "스택과 3벳"],
+  ["depth", "토너먼트 심화"],
   ["reads", "상대 읽기"],
   ["continuation", "계속 참여 가치"],
-  ["library", "문헌"]
+  ["rng", "RNG"],
+  ["world", "세계 연구"],
+  ["library", "기초 문헌"]
 ];
 
 // Secondary nav shared by the reading pages of 연구소.

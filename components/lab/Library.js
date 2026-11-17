@@ -3,7 +3,7 @@
 import { useState } from "react";
 import NoteNav, { Ext } from "./NoteNav";
 
-const KINDS = ["전체", "학술 연구", "전문가 해설", "선수 기고", "프리프린트"];
+const KINDS = ["전체", "학술 연구", "전문가 해설", "선수 기고"];
 const PAPERS = [
   ["학술 연구", "CFR · 2007", "불완전정보 게임에서 후회를 최소화하는 방법", "Regret Minimization in Games with Incomplete Information", "반복 학습으로 각 정보 집합의 행동을 개선한다. 두 명의 제로섬 게임에서 평균 전략을 평가하는 이론적 토대다.", "https://proceedings.neurips.cc/paper/2007/file/08d98638c6fcd194a4b1e6992063e944-Paper.pdf"],
   ["학술 연구", "DeepStack · 2017", "헤즈업 노리밋 포커의 전문가 수준 인공지능", "DeepStack: Expert-Level Artificial Intelligence in Heads-Up No-Limit Poker", "현재 보드뿐 아니라 핸드별 가치와 레인지를 고려해 전략을 다시 계산한다. 이 결과를 다인 토너먼트의 특정 핸드 차트로 그대로 옮길 수는 없다.", "https://arxiv.org/abs/1701.01724"],
@@ -15,7 +15,7 @@ const PAPERS = [
   ["선수 기고", "Negreanu · 2006", "스몰볼을 신중하게 적용해야 하는 이유", "Small Ball Should Be Played With Caution", "작은 팟을 누적하는 접근에는 높은 핸드 리딩 능력이 필요하다고 설명한다. 당시 선수 본인의 전략 설명이며 현재 모든 상황의 처방은 아니다.", "https://www.chron.com/sports/article/on-poker-small-ball-should-be-played-with-caution-1893829.php"],
   ["학술 연구", "CRR · 1979", "간단한 이항 모형으로 옵션 가격 평가하기", "Option Pricing: A Simplified Approach", "미래 상태에서 현재로 거슬러 계산하는 방법이 포커의 계속 참여 가치에 영감을 준다. 포커 확률은 카드와 상대 행동으로 정한다.", "https://doi.org/10.1016/0304-405X(79)90015-1"],
   ["학술 연구", "Johanson et al. · 2013", "게임 상태를 요약하면 얼마나 정확도가 줄어드는가", "Evaluating State-Space Abstractions in Extensive-Form Games", "평균 승률만으로 요약하면 미래에 좋아지거나 나빠지는 분포를 놓칠 수 있다. 이항 트리의 판단 오차를 비교할 출발점이다.", "https://poker.cs.ualberta.ca/publications/AAMAS13-abstraction.pdf"],
-  ["프리프린트", "Kim · 2025", "독립 칩 모형의 경험적 검증", "Empirical Validation of the Independent Chip Model", "토너먼트 칩을 순위·상금 가치로 바꾸는 ICM을 연구하는 후속 읽을거리다. 프리프린트이며 출판 심사 상태와 가정을 별도로 확인해야 한다.", "https://arxiv.org/abs/2506.00180"]
+  ["학술 연구", "Kim · IEEE CoG 2025", "독립 칩 모형의 경험적 검증", "Empirical Validation of the Independent Chip Model", "실제 대회 스냅샷으로 ICM을 검증했다. 비교 기준보다 정확했지만 큰 스택을 낮게, 숏스택을 높게 평가하는 경향을 보고한다. 전략 처방과는 구별해 읽는다.", "https://arxiv.org/abs/2506.00180"]
 ];
 
 export default function Library({ go }) {
@@ -30,7 +30,7 @@ export default function Library({ go }) {
           <div>
             <p className="kicker">RESEARCH NOTE / READ THE ORIGINAL</p>
             <h2>영문에서 시작해, 한국어로 이해하기</h2>
-            <p>제목 번역과 핵심 요약입니다. 논문 전체 번역이 아니며, 각 항목에 그 결과를 어디까지 적용할 수 없는지를 함께 적었습니다.</p>
+            <p>연구 노트들이 기대는 기초 문헌입니다. 제목 번역과 핵심 요약이며 논문 전체 번역이 아니고, 각 항목에 그 결과를 어디까지 적용할 수 없는지를 함께 적었습니다.</p>
           </div>
         </header>
         <div className="seg lib-filter" role="group" aria-label="근거 수준">
