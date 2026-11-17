@@ -12,6 +12,9 @@ import Tournament from "./lab/Tournament";
 import Reads from "./lab/Reads";
 import Continuation from "./lab/Continuation";
 import Library from "./lab/Library";
+import DeepTournament from "./lab/DeepTournament";
+import Rng from "./lab/Rng";
+import World from "./lab/World";
 import Train from "./Train";
 import Practice from "./Practice";
 import HandLab from "./HandLab";
@@ -29,7 +32,7 @@ const NAV = [
   ["lounge", Users]
 ];
 // Drill and summary screens belong to the training section.
-const NAV_OWNER = { practice: "train", summary: "train", tournament: "home", reads: "home", continuation: "home", library: "home" };
+const NAV_OWNER = { practice: "train", summary: "train", tournament: "home", reads: "home", continuation: "home", library: "home", depth: "home", rng: "home", world: "home" };
 
 export default function App() {
   const pathname = usePathname();
@@ -174,6 +177,9 @@ export default function App() {
         {page === "reads" && <Reads go={go} />}
         {page === "continuation" && <Continuation go={go} />}
         {page === "library" && <Library go={go} />}
+        {page === "depth" && <DeepTournament go={go} />}
+        {page === "rng" && <Rng go={go} />}
+        {page === "world" && <World go={go} />}
         {page === "train" && <Train start={start} answered={answered} correct={correct} reviewQueue={reviewQueue} />}
         {page === "practice" && reviewSet?.length ? (
           <Practice
